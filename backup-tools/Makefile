@@ -1,8 +1,7 @@
-
 SHELL       := /bin/sh
 REGISTRY    ?= 
 IMAGE       := sapcc/backup-tools
-VERSION     := v0.1.2
+VERSION     ?= v0.1.2
 
 ### Proxy Foo
 ifneq ($(http_proxy),)
