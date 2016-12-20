@@ -19,7 +19,7 @@ RUN mkdir /backup \
 	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /etc/apt/sources.list.d/postgresql.list \
 	&& wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
 	&& apt-get update && apt-get dist-upgrade -y \
-	&& apt-get install -y --no-install-recommends mariadb-client postgresql-client-9.6 python-swiftclient cron barman percona-xtrabackup-24 \
+	&& apt-get install -y --no-install-recommends mariadb-client python-swiftclient cron barman percona-xtrabackup-24 \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& dpkg --purge postgresql-client-9.5 \
 	&& rm *.deb \
