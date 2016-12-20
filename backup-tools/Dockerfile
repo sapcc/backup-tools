@@ -1,8 +1,8 @@
 FROM hub.global.cloud.sap/monsoon/ubuntu:test16.04
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
 
-ADD scripts/db-backup.sh /usr/local/sbin/db-backup.sh
-ADD additional_data/crontab /etc/cron.d/db-backup
+ADD files/db-backup.sh /usr/local/sbin/db-backup.sh
+ADD files/crontab /etc/cron.d/db-backup
 
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
