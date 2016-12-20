@@ -1,6 +1,6 @@
 SHELL       := /bin/sh
 REGISTRY    ?= 
-IMAGE       := sapcc/backup-tools
+IMAGE       ?= sapcc/backup-tools
 VERSION     ?= v0.1.2
 
 ### Proxy Foo
