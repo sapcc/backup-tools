@@ -1,7 +1,6 @@
 SHELL       := /bin/sh
 REGISTRY    ?=
-NAMESAPCE	?= sapcc
-IMAGE       ?= $(NAMESAPCE)/backup-tools
+IMAGE       ?= sapcc/backup-tools
 VERSION     ?= v0.1.2
 
 ### Proxy Foo
