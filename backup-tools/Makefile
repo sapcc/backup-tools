@@ -1,6 +1,7 @@
 SHELL       := /bin/sh
-REGISTRY    ?= 
-IMAGE       ?= sapcc/backup-tools
+REGISTRY    ?=
+NAMESAPCE	?= sapcc
+IMAGE       ?= $(NAMESAPCE)/backup-tools
 VERSION     ?= v0.1.2
 
 ### Proxy Foo
@@ -11,12 +12,12 @@ ifneq ($(NO_CACHE),)
 BUILD_ARGS += --no-cache
 endif
 
-### Docker Targets 
+### Docker Targets
 
 .PHONY: build
-build: 
+build:
 	docker build $(BUILD_ARGS) -t $(REGISTRY)/$(IMAGE):$(VERSION) --rm .
 
-.PHONY: push 
-push: 
+.PHONY: push
+push:
 	docker push $(REGISTRY)/$(IMAGE):$(VERSION)
