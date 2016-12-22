@@ -105,7 +105,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
     if [ "$PG_DUMP" = 1 ] ; then
-      for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do pg_dump -U postgres -h localhost $i --file=$BACKUP_BASE/$i.sql ; gzip $BACKUP_BASE/$i.sql ; done
+      for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do pg_dump -U postgres -h localhost $i --file=$BACKUP_BASE/$i.sql ; gzip -f $BACKUP_BASE/$i.sql ; done
       swift upload --changed "postgres-$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
     else
       # Postgres Backup (full)
