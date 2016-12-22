@@ -27,7 +27,7 @@ if [ -f "$LOCKFILE" ] ; then
   exit 0
 fi
 
-if [ -f "/etc/db-backup/mysql.backup.full" ] && [ -S $MYSQL_SOCKET ] ; then
+if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] ; then
 
   DATADIR=/db/data/
   SOCKET=/db/socket/mysqld.sock
@@ -36,8 +36,8 @@ if [ -f "/etc/db-backup/mysql.backup.full" ] && [ -S $MYSQL_SOCKET ] ; then
   PASSWORD=foobar
 
   # Create backup interval
-  INTERVAL_FULL="$(cat /etc/db-backup/mysql.backup.full)"
-  INTERVAL_INCR="$(cat /etc/db-backup/mysql.backup.incr)"
+  INTERVAL_FULL="$BACKUP_MYSQL_FULL"
+  INTERVAL_INCR="$BACKUP_MYSQL_INCR"
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
   IS_NEXT_TS_INCR="$(date --date="now - $INTERVAL_INCR" +%Y%m%d%H%M)"
 
@@ -77,7 +77,7 @@ if [ -f "/etc/db-backup/mysql.backup.full" ] && [ -S $MYSQL_SOCKET ] ; then
 
 fi
 
-if [ -f "/etc/db-backup/postgres.backup.full" ] ; then
+if [ "$BACKUP_PGSQL_FULL" ] ; then
   # PostgreSQL Backup
   DATADIR=/db/data
   BACKUP_BASE=/backup/pgsql/base
@@ -87,7 +87,8 @@ if [ -f "/etc/db-backup/postgres.backup.full" ] ; then
   fi
 
   # Create backup interval
-  INTERVAL_FULL="$(cat /etc/db-backup/postgres.backup.full)"
+  INTERVAL_FULL="$BACKUP_PGSQL_FULL"
+  INTERVAL_INCR="$BACKUP_PGSQL_INCR"
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
 
   if [ "$TESTING" -gt "0" ] ; then
