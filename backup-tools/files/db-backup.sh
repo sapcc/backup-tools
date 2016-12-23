@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /env/cron
+source /env.cron
 
 TESTING=0
 PG_DUMP=1
