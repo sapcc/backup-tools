@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "MY_POD_NAME=\"${MY_POD_NAME}\"" > /env.cron
 echo "MY_POD_NAMESPACE=\"${MY_POD_NAMESPACE}\"" >> /env.cron
 echo "OS_AUTH_URL=\"${OS_AUTH_URL}\"" >> /env.cron
