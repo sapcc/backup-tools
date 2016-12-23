@@ -5,7 +5,7 @@ source /env.cron
 TESTING=0
 PG_DUMP=1
 
-SWIFT_CONTAINER="${OS_REGION_NAME}-${MY_POD_NAMESPACE}-${MY_POD_NAME}"
+SWIFT_CONTAINER="${OS_REGION_NAME}_${MY_POD_NAMESPACE}_${MY_POD_NAME}"
 
 # We assume that the databases are using their default ports
 MYSQL_PORT=3306
@@ -108,18 +108,18 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
 
     if [ "$PG_DUMP" = 1 ] ; then
       for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do
-        echo "Creating backup of database $i ..." >> /var/log/backup.log
+        echo "[$(date +%Y%m%d%H%M%S)] Creating backup of database $i ..." >> /var/log/backup.log
         pg_dump -U postgres -h localhost $i --file=$BACKUP_BASE/$i.sql
         gzip -f $BACKUP_BASE/$i.sql
       done
-      echo "Uploading backup to postgres-$SWIFT_CONTAINER/$CUR_TS ..." >> /var/log/backup.log
-      swift upload --changed "postgres-$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      echo "[$(date +%Y%m%d%H%M%S)] Uploading backup to postgres/$SWIFT_CONTAINER/$CUR_TS ..." >> /var/log/backup.log
+      swift upload --changed "postgres/$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
     else
       # Postgres Backup (full)
       /usr/bin/barman  cron
       /usr/bin/barman backup all
-      swift upload --changed "postgres-$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
-      swift upload --changed "postgres-$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
+      swift upload --changed "postgres/$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      swift upload --changed "postgres/$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
     fi
 
     rm $LOCKFILE
