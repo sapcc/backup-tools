@@ -5,7 +5,7 @@ source /env.cron
 TESTING=0
 PG_DUMP=1
 
-SWIFT_CONTAINER="BACKUP-${MY_POD_NAME}-${MY_POD_NAMESPACE}"
+SWIFT_CONTAINER="${OS_REGION_NAME}-${MY_POD_NAMESPACE}-${MY_POD_NAME}"
 
 # We assume that the databases are using their default ports
 MYSQL_PORT=3306
