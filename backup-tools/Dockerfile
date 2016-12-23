@@ -2,8 +2,9 @@ FROM hub.global.cloud.sap/monsoon/ubuntu:test16.04
 
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
 
-ADD files/db-backup.sh /usr/local/sbin/db-backup.sh
 ADD files/crontab /etc/cron.d/db-backup
+ADD files/db-backup.sh /usr/local/sbin/db-backup.sh
+ADD files/backup-run.sh /usr/local/sbin/backup-run.sh
 
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
@@ -11,6 +12,7 @@ RUN mkdir /backup \
 	&& echo "APT::Install-Suggests "0";" > /etc/apt/apt.conf.d/99local \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& chmod a+x /usr/local/sbin/db-backup.sh \
+	&& chmod a+x /usr/local/sbin/backup-run.sh \
 	&& echo "deb http://tretkowski.de/sap/ backup-tools/" >> /etc/apt/sources.list.d/sap-repo.list \
 	&& apt-get update && apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates \
@@ -30,4 +32,4 @@ RUN mkdir /backup \
 
 VOLUME ["/backup"]
 
-CMD ["cron", "-f"]
+CMD ["/usr/local/sbin/backup-run.sh"]
