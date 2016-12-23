@@ -28,6 +28,7 @@ RUN mkdir /backup \
 	&& rm *.deb \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& chmod 0644 /etc/cron.d/db-backup \
+	&& ln -sf /proc/1/fd/1 /var/log/backup.log \
 	&& touch /var/log/cron.log
 
 VOLUME ["/backup"]
