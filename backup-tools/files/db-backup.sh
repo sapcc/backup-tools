@@ -1,5 +1,7 @@
 #!/bin/sh
 
+source /env/cron
+
 TESTING=0
 PG_DUMP=1
 
