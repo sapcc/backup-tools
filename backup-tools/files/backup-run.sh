@@ -17,4 +17,5 @@ else
   echo "declare -x BACKUP_MYSQL_FULL=\"${BACKUP_MYSQL_FULL}\"" >> /env.cron
   echo "declare -x BACKUP_MYSQL_INCR=\"${BACKUP_MYSQL_INCR}\"" >> /env.cron
 fi
+chmod 600 /env.cron
 cron -f
