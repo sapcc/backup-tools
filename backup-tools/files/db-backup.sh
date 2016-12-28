@@ -33,9 +33,13 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
   DATADIR=/db/data/
   SOCKET=/db/socket/mysqld.sock
-  BACKUP_BASE=/backup/MySQL/base/
+  BACKUP_BASE=/backup/mysql/base/
   USERNAME=root
-  PASSWORD=foobar
+  PASSWORD=$MYSQL_ROOT_PASSWORD
+
+  if [ ! -d "$BACKUP_BASE" ] ; then
+    mkdir -p "$BACKUP_BASE"
+  fi
 
   # Create backup interval
   INTERVAL_FULL="$BACKUP_MYSQL_FULL"
