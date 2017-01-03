@@ -5,6 +5,8 @@ source /env.cron
 TESTING=0
 PG_DUMP=1
 
+EXPIRE=0
+
 SWIFT_CONTAINER="${OS_REGION_NAME}_${MY_POD_NAMESPACE}_${MY_POD_NAME}"
 
 # We assume that the databases are using their default ports
@@ -129,4 +131,15 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
     rm $LOCKFILE
     exit 0
   fi
+fi
+
+if [ "$EXPIRE" = 1 ] ; then
+  EXPIRE="10 days"
+  EXPIRE_DATE="`date -d -\"$EXPIRE\" +\"%Y%m%d%H%M\"`"
+  for i in `swift list $BACKUP_BASE` ; do
+    BACKUP_DATE="`echo $i | cut -d / -f 1`"
+    if [ "$BACKUP_DATE" -le "$EXPIRE_DATE" ] ; then
+      echo "swift delete $BACKUP_BASE $i"
+    fi
+  done
 fi
