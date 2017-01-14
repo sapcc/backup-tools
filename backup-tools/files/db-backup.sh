@@ -18,7 +18,7 @@ PGSQL_BARMAN_DIR=/var/lib/barman/
 
 CUR_TS="$(date +%Y%m%d%H%M)"
 LAST_BACKUP_FILE="/tmp/last_backup_timestap"
-LOCKFILE="/tmp/backup.lock"
+PIDFILE="/var/run/db-backup.pid"
 
 if [ -f "$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat $LAST_BACKUP_FILE)"
@@ -26,9 +26,12 @@ else
   LAST_BACKUP_TS=0
 fi
 
-if [ -f "$LOCKFILE" ] ; then
-  echo "Backup in progress..."
-  exit 0
+if [ -f "$PIDFILE" ] ; then
+  PID="`cat $PIDFILE`"
+  if [ -e /proc/$PID -a /proc/$PID/exe ] ; then
+    echo "Backup in progress..."
+    exit 1
+  fi
 fi
 
 if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] ; then
@@ -56,19 +59,19 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
   echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
-    touch $LOCKFILE
+    echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
     # MySQL Backup (full)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     swift upload "mariadb-$SWIFT_CONTAINER/base" $BACKUP_BASE
 
-    rm $LOCKFILE
+    rm $PIDFILE
     exit 0
   fi
 
   if [ "$IS_NEXT_TS_INCR" -ge "$LAST_BACKUP_TS" ] ; then
-    touch $LOCKFILE
+    echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
     if [ -d "/backup/inc$LAST_BACKUP_TS" ] ; then
@@ -76,10 +79,9 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     fi
 
     # MySQL Backup (incremental)
-
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=/backup/inc$CUR_TS --incremental-basedir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     swift upload "mariadb-$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
-    rm $LOCKFILE
+    rm $PIDFILE
     exit 0
   fi
 
@@ -107,9 +109,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
   echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
-
-
-    touch $LOCKFILE
+    echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
     if [ "$PG_DUMP" = 1 ] ; then
@@ -128,7 +128,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
       swift upload --changed "postgres/$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
     fi
 
-    rm $LOCKFILE
+    rm $PIDFILE
     exit 0
   fi
 fi
