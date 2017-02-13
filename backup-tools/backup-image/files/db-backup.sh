@@ -133,6 +133,43 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
   fi
 fi
 
+if [ "$BACKUP_INFLUXDB_FULL" ] ; then
+  # InfluxDB Backup
+  BACKUP_BASE=/backup/influxdb/base
+
+  if [ ! -d "$BACKUP_BASE" ] ; then
+    mkdir -p "$BACKUP_BASE"
+  fi
+
+  # Create backup interval
+  INTERVAL_FULL="$(cat /etc/db-backup/influxdb.backup.full)"
+  IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
+
+  if [ "$TESTING" -gt "0" ] ; then
+    # Cleanup for testing
+    rm -rf /backup/*
+  fi
+
+  echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
+
+  if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
+    echo $$ > $PIDFILE
+    echo "$CUR_TS" > $LAST_BACKUP_FILE
+
+    for i in `influx -execute 'show databases' -host localhost:8083 | grep -E -v "(^---|^_internal|^name)"` ; do
+      echo "[$(date +%Y%m%d%H%M%S)] Creating backup of database $i ..." >> /var/log/backup.log
+      influxd backup -database $i -host localhost:8083 "$BACKUP_BASE/$i"
+      tar zcvf "$i.tar.gz" "$BACKUP_BASE/$i"
+      rm -rf $BACKUP_BASE/$i
+    done
+    echo "[$(date +%Y%m%d%H%M%S)] Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..." >> /var/log/backup.log
+    swift upload --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+
+    rm $PIDFILE
+    exit 0
+  fi
+fi
+
 if [ "$EXPIRE" = 1 ] ; then
   EXPIRE="10 days"
   EXPIRE_DATE="`date -d -\"$EXPIRE\" +\"%Y%m%d%H%M\"`"
