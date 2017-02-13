@@ -11,7 +11,9 @@ echo "declare -x OS_PROJECT_NAME=\"${OS_PROJECT_NAME}\"" >> /env.cron
 echo "declare -x OS_PROJECT_DOMAIN_NAME=\"${OS_PROJECT_DOMAIN_NAME}\"" >> /env.cron
 echo "declare -x OS_REGION_NAME=\"${OS_REGION_NAME}\"" >> /env.cron
 echo "declare -x OS_PASSWORD=\"${OS_PASSWORD}\"" >> /env.cron
-if [ "$BACKUP_PGSQL_FULL" ] ; then
+if [ "$BACKUP_INFLUXDB_FULL" ] ; then
+  echo "declare -x BACKUP_INFLUXDB_FULL=\"${BACKUP_INFLUXDB_FULL}\"" >> /env.cron
+elif [ "$BACKUP_PGSQL_FULL" ] ; then
   echo "declare -x BACKUP_PGSQL_FULL=\"${BACKUP_PGSQL_FULL}\"" >> /env.cron
   echo "declare -x BACKUP_PGSQL_INCR=\"${BACKUP_PGSQL_INCR}\"" >> /env.cron
 else
