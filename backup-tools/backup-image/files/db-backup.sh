@@ -29,7 +29,7 @@ fi
 if [ -f "$PIDFILE" ] ; then
   PID="`cat $PIDFILE`"
   if [ -e /proc/$PID -a /proc/$PID/exe ] ; then
-    echo "Backup in progress..."
+    echo "Backup already in progress..."
     exit 1
   fi
 fi
@@ -57,7 +57,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     rm -rf /backup/*
   fi
 
-  echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
+  #echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
@@ -106,7 +106,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
     rm -rf /backup/*
   fi
 
-  echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
+  #echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
