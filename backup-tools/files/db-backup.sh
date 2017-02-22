@@ -7,7 +7,7 @@ PG_DUMP=1
 
 EXPIRE=0
 
-SWIFT_CONTAINER="dbbackup/${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
+SWIFT_CONTAINER="db_backup/${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
 
 # We assume that the databases are using their default ports
 MYSQL_PORT=3306
