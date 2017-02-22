@@ -7,7 +7,7 @@ PG_DUMP=1
 
 EXPIRE=0
 
-SWIFT_CONTAINER="${OS_REGION_NAME}_${MY_POD_NAMESPACE}_${MY_POD_NAME}"
+SWIFT_CONTAINER="dbbackup/${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
 
 # We assume that the databases are using their default ports
 MYSQL_PORT=3306
@@ -64,7 +64,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
     # MySQL Backup (full)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload "mariadb-$SWIFT_CONTAINER/base" $BACKUP_BASE
+    swift upload "$SWIFT_CONTAINER/base" $BACKUP_BASE
 
     rm $PIDFILE
     exit 0
@@ -80,7 +80,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
     # MySQL Backup (incremental)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=/backup/inc$CUR_TS --incremental-basedir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload "mariadb-$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
+    swift upload "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
     rm $PIDFILE
     exit 0
   fi
@@ -118,14 +118,14 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
         pg_dump -U postgres -h localhost $i --file=$BACKUP_BASE/$i.sql
         gzip -f $BACKUP_BASE/$i.sql
       done
-      echo "[$(date +%Y%m%d%H%M%S)] Uploading backup to postgres/$SWIFT_CONTAINER/$CUR_TS ..." >> /var/log/backup.log
-      swift upload --changed "postgres/$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      echo "[$(date +%Y%m%d%H%M%S)] Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..." >> /var/log/backup.log
+      swift upload --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
     else
       # Postgres Backup (full)
       /usr/bin/barman  cron
       /usr/bin/barman backup all
-      swift upload --changed "postgres/$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
-      swift upload --changed "postgres/$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
+      swift upload --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      swift upload --changed "$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
     fi
 
     rm $PIDFILE
