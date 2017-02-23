@@ -11,7 +11,7 @@ source /env.cron
 swift list db_backup | grep "^$OS_REGION_NAME/" > /backup/from.log
 
 source /env_$REPLICATE_TO.cron
-swift list db_replication | grep "^$OS_REGION_NAME/" > /backup/to.log
+swift list db_backup_replication | grep "^$OS_REGION_NAME/" > /backup/to.log
 
 REPL_OBJECTS="`cat /backup/from.log /backup/to.log | sort | uniq -u`"
 
@@ -28,7 +28,7 @@ source /env_$REPLICATE_TO.cron
 echo "[$(date +%Y%m%d%H%M%S)] Uploading backups to $TO..." > $LOGFILE
 for i in $REPL_OBJECTS ; do
   echo -n "[$(date +%Y%m%d%H%M%S)] " > $LOGFILE
-  swift upload db_replication $i > $LOGFILE
+  swift upload db_backup_replication $i > $LOGFILE
 done
 
 rm -rf /backup/*
