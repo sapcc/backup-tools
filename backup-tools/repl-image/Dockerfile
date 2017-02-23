@@ -3,6 +3,7 @@ FROM hub.global.cloud.sap/monsoon/ubuntu:test16.04
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
 
 ADD files/replication-run.sh /usr/local/sbin/replication-run.sh
+ADD files/backup-replication.sh /usr/local/sbin/backup-replication.sh
 
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
