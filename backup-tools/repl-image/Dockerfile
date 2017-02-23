@@ -8,6 +8,8 @@ ADD files/backup-replication.sh /usr/local/sbin/backup-replication.sh
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
 	&& sed -i s/archive\.ubuntu\.com/de\.archive\.ubuntu\.com/g /etc/apt/sources.list \
+	&& chmod a+x /usr/local/sbin/backup-replication.sh \
+	&& chmod a+x /usr/local/sbin/replication-run.sh \
 	&& echo "APT::Install-Suggests "0";" > /etc/apt/apt.conf.d/99local \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& apt-get update && apt-get upgrade -y \
