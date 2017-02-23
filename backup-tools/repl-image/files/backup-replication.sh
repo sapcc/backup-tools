@@ -17,16 +17,16 @@ REPL_OBJECTS="`cat /backup/from.log /backup/to.log | sort | uniq -u`"
 
 source /env_$FROM.cron
 
+echo "[$(date +%Y%m%d%H%M%S)] Downloading backups from $FROM..." > $LOGFILE
 for i in $REPL_OBJECTS ; do
-  echo "[$(date +%Y%m%d%H%M%S)] Downloading backups from $FROM..." > $LOGFILE
   echo -n "[$(date +%Y%m%d%H%M%S)] " > $LOGFILE
   swift download db_backup $i > $LOGFILE
 done
 
 source /env_$TO.cron
 
+echo "[$(date +%Y%m%d%H%M%S)] Uploading backups to $TO..." > $LOGFILE
 for i in $REPL_OBJECTS ; do
-  echo "[$(date +%Y%m%d%H%M%S)] Uploading backups to $TO..." > $LOGFILE
   echo -n "[$(date +%Y%m%d%H%M%S)] " > $LOGFILE
   swift upload db_replication $i > $LOGFILE
 done
