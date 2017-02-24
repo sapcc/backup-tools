@@ -1,0 +1,1 @@
+*/5 * * * * root test -x /usr/local/sbin/backup-replication.shh && /usr/local/sbin/backup-replication.sh > /proc/1/fd/1 2>&1

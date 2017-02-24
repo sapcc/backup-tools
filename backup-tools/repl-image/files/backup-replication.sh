@@ -35,4 +35,6 @@ if [ "$REPL_OBJECTS" != "" ] ; then
   done
 
   rm -rf /backup/*
+else
+  echo "[$(date +%Y%m%d%H%M%S)] No new backups to transfer." > $LOGFILE
 fi
