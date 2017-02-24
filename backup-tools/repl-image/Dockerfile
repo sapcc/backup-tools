@@ -16,6 +16,7 @@ RUN mkdir /backup \
 	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates \
 	&& apt-get install -y --no-install-recommends python-swiftclient cron \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
+	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/*
 
 VOLUME ["/backup"]

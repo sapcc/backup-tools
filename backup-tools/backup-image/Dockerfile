@@ -26,6 +26,7 @@ RUN mkdir /backup \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& dpkg --purge postgresql-client-9.5 \
 	&& rm *.deb \
+	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& chmod 0644 /etc/cron.d/db-backup \
 	&& ln -sf /proc/1/fd/1 /var/log/backup.log \
