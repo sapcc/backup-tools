@@ -15,20 +15,22 @@ swift list db_backup_replication | grep "^$OS_REGION_NAME/" > /backup/to.log
 
 REPL_OBJECTS="`cat /backup/from.log /backup/to.log | sort | uniq -u`"
 
-source /env_$OS_REGION_NAME.cron
+if [ "$REPL_OBJECTS" != "" ] ; then
+  source /env_$FROM.cron
 
-echo "[$(date +%Y%m%d%H%M%S)] Downloading backups from $OS_REGION_NAME..." > $LOGFILE
-for i in $REPL_OBJECTS ; do
-  echo -n "[$(date +%Y%m%d%H%M%S)] " > $LOGFILE
-  swift download db_backup $i > $LOGFILE
-done
+  echo "[$(date +%Y%m%d%H%M%S)] Downloading backups from $FROM..." > $LOGFILE
+  for i in $REPL_OBJECTS ; do
+    echo -n "[$(date +%Y%m%d%H%M%S)] " > $LOGFILE
+    swift download db_backup $i > $LOGFILE
+  done
 
-source /env_$REPLICATE_TO.cron
+  source /env_$TO.cron
 
-echo "[$(date +%Y%m%d%H%M%S)] Uploading backups to $TO..." > $LOGFILE
-for i in $REPL_OBJECTS ; do
-  echo -n "[$(date +%Y%m%d%H%M%S)] " > $LOGFILE
-  swift upload db_backup_replication $i > $LOGFILE
-done
+  echo "[$(date +%Y%m%d%H%M%S)] Uploading backups to $TO..." > $LOGFILE
+  for i in $REPL_OBJECTS ; do
+    echo -n "[$(date +%Y%m%d%H%M%S)] " > $LOGFILE
+    swift upload db_backup_replication $i > $LOGFILE
+  done
 
-rm -rf /backup/*
+  rm -rf /backup/*
+fi
