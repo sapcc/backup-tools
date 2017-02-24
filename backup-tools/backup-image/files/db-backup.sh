@@ -134,7 +134,11 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
 fi
 
 if [ "$EXPIRE" = 1 ] ; then
-  BACKUP_EXPIRE="10 days"
+  if [ "$BACKUP_EXPIRATION_INTERVAL" = "" ] ; then
+    BACKUP_EXPIRE="10 days"
+  else
+    BACKUP_EXPIRE="$BACKUP_EXPIRATION_INTERVAL"
+  fi
   EXPIRE_DATE="`date -d -\"$BACKUP_EXPIRE\" +\"%Y%m%d%H%M\"`"
   for i in `swift list $BACKUP_BASE` ; do
     BACKUP_DATE="`echo $i | cut -d / -f 1`"
