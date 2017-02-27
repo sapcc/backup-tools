@@ -1,24 +1,28 @@
 #!/bin/bash
 
-source /env_staging.cron
+source /backup/env/from.env
 
 LOGFILE="/proc/1/fd/1"
 
 REPLICATE_FROM="$OS_REGION_NAME"
 REPLICATE_TO="eu-de-1"
 
-cd /backup
+if [ ! -d /backup/tmp ] ; then
+  mkdir /backup/tmp
+fi
 
-source /env_staging.cron
-swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/from.log
+cd /backup/tmp
 
-source /env_$REPLICATE_TO.cron
-swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/to.log
+source /backup/env/from.env
+swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/tmp/from.log
 
-REPL_OBJECTS="`cat /backup/from.log /backup/to.log | sort | uniq -u`"
+source /backup/env/to1.env
+swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/tmp/to.log
+
+REPL_OBJECTS="`cat /backup/tmp/from.log /backup/tmp/to.log | sort | uniq -u`"
 
 if [ "$REPL_OBJECTS" != "" ] ; then
-  source /env_$REPLICATE_FROM.cron
+  source /backup/env/from.env
 
   echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading backups from $REPLICATE_FROM..." > $LOGFILE
   for i in $REPL_OBJECTS ; do
@@ -26,7 +30,7 @@ if [ "$REPL_OBJECTS" != "" ] ; then
     swift download db_backup $i > $LOGFILE
   done
 
-  source /env_$REPLICATE_TO.cron
+  source /backup/env/to1.env
 
   echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backups to $REPLICATE_TO..." > $LOGFILE
   for i in $REPL_OBJECTS ; do
@@ -34,7 +38,7 @@ if [ "$REPL_OBJECTS" != "" ] ; then
     swift upload db_backup $i > $LOGFILE
   done
 
-  rm -rf /backup/*
+  rm -rf /backup/tmp/*
 else
   echo "$(date +'%Y/%m/%d %H:%M:%S %Z') No new backups to transfer." > $LOGFILE
 fi
