@@ -143,12 +143,12 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
     for i in `influx -execute 'show databases' -host localhost:8083 | grep -E -v "(^---|^_internal|^name)"` ; do
-      echo "[$(date +%Y%m%d%H%M%S)] Creating backup of database $i ..." >> /var/log/backup.log
+      echo "[$(date +%Y%m%d%H%M%S)] Creating backup of database $i ..."
       influxd backup -database $i -host localhost:8083 "$BACKUP_BASE/$i"
       tar zcvf "$i.tar.gz" "$BACKUP_BASE/$i"
       rm -rf $BACKUP_BASE/$i
     done
-    echo "[$(date +%Y%m%d%H%M%S)] Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..." >> /var/log/backup.log
+    echo "[$(date +%Y%m%d%H%M%S)] Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..."
     swift upload --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
 
     rm $PIDFILE
