@@ -1,8 +1,13 @@
 #!/bin/bash
 
-source /backup/env/from.env
-
 LOGFILE="/proc/1/fd/1"
+
+if [ ! -f /backup/env/from.env ] || [ ! -f /backup/env/to1.env ] ; then
+  echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Configuration files missing, check helm deployment." > $LOGFILE
+  exit 1
+fi
+
+source /backup/env/from.env
 
 REPLICATE_FROM="$OS_REGION_NAME"
 REPLICATE_TO="eu-de-1"
