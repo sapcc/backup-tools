@@ -2,7 +2,6 @@
 
 source /env.cron
 
-TESTING=0
 PG_DUMP=1
 
 EXPIRE=0
@@ -52,12 +51,6 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
   IS_NEXT_TS_INCR="$(date --date="now - $INTERVAL_INCR" +%Y%m%d%H%M)"
 
-  if [ "$TESTING" -gt "0" ] ; then
-    # Cleanup for testing
-    rm -rf /backup/*
-  fi
-
-  #echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
@@ -100,13 +93,6 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
   INTERVAL_FULL="$BACKUP_PGSQL_FULL"
   INTERVAL_INCR="$BACKUP_PGSQL_INCR"
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
-
-  if [ "$TESTING" -gt "0" ] ; then
-    # Cleanup for testing
-    rm -rf /backup/*
-  fi
-
-  #echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
