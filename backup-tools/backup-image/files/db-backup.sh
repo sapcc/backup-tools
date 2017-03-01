@@ -120,21 +120,14 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
 fi
 
 if [ "$BACKUP_INFLUXDB_FULL" ] ; then
-  # InfluxDB Backup
   BACKUP_BASE=/backup/influxdb/base
 
   if [ ! -d "$BACKUP_BASE" ] ; then
     mkdir -p "$BACKUP_BASE"
   fi
 
-  # Create backup interval
   INTERVAL_FULL="$(cat /etc/db-backup/influxdb.backup.full)"
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
-
-  if [ "$TESTING" -gt "0" ] ; then
-    # Cleanup for testing
-    rm -rf /backup/*
-  fi
 
   echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
 
