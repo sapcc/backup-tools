@@ -27,7 +27,8 @@ RUN mkdir /backup \
 	&& apt-get install -y --no-install-recommends mariadb-client python-swiftclient cron barman percona-xtrabackup-24 \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& dpkg --purge postgresql-client-9.5 \
-	&& curl "https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXVER}_amd64.deb" -o "influx.deb"; dpkg -i influx.deb \
+	&& wget "https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXVER}_amd64.deb" \
+	&& dpkg -i influxdb_${INFLUXVER}_amd64.deb \
 	&& rm *.deb \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/* \
