@@ -126,7 +126,7 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
     mkdir -p "$BACKUP_BASE"
   fi
 
-  INTERVAL_FULL="$(cat /etc/db-backup/influxdb.backup.full)"
+  INTERVAL_FULL="$BACKUP_INFLUXDB_FULL"
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
 
   echo "$IS_NEXT_TS_FULL -ge $LAST_BACKUP_TS"
