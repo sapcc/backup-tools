@@ -136,9 +136,9 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
     echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
-    for i in `influx -username "$USERNAME" -password "$PASSWORD" -execute 'show databases' -host localhost -port 8083 | grep -E -v "(^---|^_internal|^name)"` ; do
+    for i in `influx -username "$USERNAME" -password "$PASSWORD" -execute 'show databases' -host localhost -port 8086 | grep -E -v "(^---|^_internal|^name|^$)"` ; do
       echo "[$(date +%Y%m%d%H%M%S)] Creating backup of database $i ..."
-      influxd backup -database $i -username "$USERNAME" -password "$PASSWORD" -host localhost -port 8083 "$BACKUP_BASE/$i"
+      influxd backup -database $i -username "$USERNAME" -password "$PASSWORD" -host localhost -port 8086 "$BACKUP_BASE/$i"
       tar zcvf "$i.tar.gz" "$BACKUP_BASE/$i"
       rm -rf $BACKUP_BASE/$i
     done
