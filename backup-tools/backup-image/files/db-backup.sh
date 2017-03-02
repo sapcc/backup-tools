@@ -34,7 +34,6 @@ if [ -f "$PIDFILE" ] ; then
 fi
 
 if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] ; then
-
   DATADIR=/db/data/
   SOCKET=/db/socket/mysqld.sock
   BACKUP_BASE=/backup/mysql/base/
@@ -121,6 +120,8 @@ fi
 
 if [ "$BACKUP_INFLUXDB_FULL" ] ; then
   BACKUP_BASE=/backup/influxdb/base
+  USERNAME=root
+  PASSWORD=$INFLUXDB_ROOT_PASSWORD
 
   if [ ! -d "$BACKUP_BASE" ] ; then
     mkdir -p "$BACKUP_BASE"
@@ -135,9 +136,9 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
     echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
-    for i in `influx -execute 'show databases' -host localhost:8083 | grep -E -v "(^---|^_internal|^name)"` ; do
+    for i in `influx -username "$USERNAME" -password "$PASSWORD" -execute 'show databases' -host localhost -port 8083 | grep -E -v "(^---|^_internal|^name)"` ; do
       echo "[$(date +%Y%m%d%H%M%S)] Creating backup of database $i ..."
-      influxd backup -database $i -host localhost:8083 "$BACKUP_BASE/$i"
+      influxd backup -database $i -username "$USERNAME" -password "$PASSWORD" -host localhost -port 8083 "$BACKUP_BASE/$i"
       tar zcvf "$i.tar.gz" "$BACKUP_BASE/$i"
       rm -rf $BACKUP_BASE/$i
     done
