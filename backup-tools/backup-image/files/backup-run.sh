@@ -19,6 +19,7 @@ elif [ "$BACKUP_PGSQL_FULL" ] ; then
 else
   echo "declare -x BACKUP_MYSQL_FULL=\"${BACKUP_MYSQL_FULL}\"" >> /env.cron
   echo "declare -x BACKUP_MYSQL_INCR=\"${BACKUP_MYSQL_INCR}\"" >> /env.cron
+  echo "declare -x MYSQL_ROOT_PASSWORD=\"${MYSQL_ROOT_PASSWORD}\"" >> /env.cron
 fi
 chmod 600 /env.cron
 cron -f
