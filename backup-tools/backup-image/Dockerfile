@@ -29,6 +29,8 @@ RUN mkdir /backup \
 	&& dpkg --purge postgresql-client-9.5 \
 	&& wget "https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXVER}_amd64.deb" \
 	&& dpkg -i influxdb_${INFLUXVER}_amd64.deb \
+	&& wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb \
+	&& dpkg -i dumb-init_1.2.0_amd64.deb \
 	&& rm *.deb \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/* \
@@ -38,4 +40,4 @@ RUN mkdir /backup \
 
 VOLUME ["/backup"]
 
-CMD ["/usr/local/sbin/backup-run.sh"]
+CMD ["/usr/bin/dumb-init", "/usr/local/sbin/backup-run.sh"]
