@@ -1,9 +1,6 @@
 #!/bin/bash
 
-source /env.cron
-
 PG_DUMP=1
-
 EXPIRE=0
 
 SWIFT_CONTAINER="db_backup/${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"

@@ -19,6 +19,7 @@ RUN mkdir /backup \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb \
 	&& dpkg -i dumb-init_1.2.0_amd64.deb \
+	&& rm *.deb \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/*
 
