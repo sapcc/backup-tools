@@ -13,6 +13,7 @@ echo "declare -x OS_REGION_NAME=\"${OS_REGION_NAME}\"" >> /env.cron
 echo "declare -x OS_PASSWORD=\"${OS_PASSWORD}\"" >> /env.cron
 if [ "$BACKUP_INFLUXDB_FULL" ] ; then
   echo "declare -x BACKUP_INFLUXDB_FULL=\"${BACKUP_INFLUXDB_FULL}\"" >> /env.cron
+  echo "declare -x INFLUXDB_ROOT_PASSWORD=\"${INFLUXDB_ROOT_PASSWORD}\"" >> /env.cron
 elif [ "$BACKUP_PGSQL_FULL" ] ; then
   echo "declare -x BACKUP_PGSQL_FULL=\"${BACKUP_PGSQL_FULL}\"" >> /env.cron
   echo "declare -x BACKUP_PGSQL_INCR=\"${BACKUP_PGSQL_INCR}\"" >> /env.cron
