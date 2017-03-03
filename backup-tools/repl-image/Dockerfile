@@ -24,4 +24,4 @@ RUN mkdir /backup \
 
 VOLUME ["/backup"]
 
-CMD ["/usr/bin/dumb-init", "/usr/local/sbin/backup-run.sh"]
+CMD ["/usr/bin/dumb-init", "/usr/local/sbin/replication-run.sh"]
