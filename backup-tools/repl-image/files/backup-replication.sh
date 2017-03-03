@@ -16,32 +16,35 @@ fi
 
 cd /backup/tmp
 
-source /backup/env/from.env
-swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/tmp/from.log
+for i in /backup/env/to*.env ; do
 
-source /backup/env/to1.env
-swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/tmp/to.log
-
-REPL_OBJECTS="`cat /backup/tmp/from.log /backup/tmp/to.log | sort | uniq -u`"
-
-if [ "$REPL_OBJECTS" != "" ] ; then
   source /backup/env/from.env
+  swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/tmp/from.log
 
-  echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading backups from $REPLICATE_FROM..."
-  for i in $REPL_OBJECTS ; do
-    echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
-    swift download db_backup $i
-  done
+  source $i
+  swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/tmp/to.log
 
-  source /backup/env/to1.env
+  REPL_OBJECTS="`cat /backup/tmp/from.log /backup/tmp/to.log | sort | uniq -u`"
 
-  echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backups to $REPLICATE_TO..."
-  for i in $REPL_OBJECTS ; do
-    echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
-    swift upload db_backup $i
-  done
+  if [ "$REPL_OBJECTS" != "" ] ; then
+    source /backup/env/from.env
 
-  rm -rf /backup/tmp/*
-else
-  echo "$(date +'%Y/%m/%d %H:%M:%S %Z') No new backups to transfer."
-fi
+    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading backups from $REPLICATE_FROM..."
+    for i in $REPL_OBJECTS ; do
+      echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
+      swift download db_backup $i
+    done
+
+    source $i
+
+    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backups to $REPLICATE_TO..."
+    for i in $REPL_OBJECTS ; do
+      echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
+      swift upload db_backup $i
+    done
+
+    rm -rf /backup/tmp/*
+  else
+    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') No new backups to transfer."
+  fi
+done
