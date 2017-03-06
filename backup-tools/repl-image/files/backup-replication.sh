@@ -31,8 +31,10 @@ for i in /backup/env/to*.env ; do
 
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading backups from $REPLICATE_FROM..."
     for i in $REPL_OBJECTS ; do
-      echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
-      swift download db_backup $i
+      if [ ! -f $i ] ; then
+        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
+        swift download db_backup $i
+      fi
     done
 
     source $i
