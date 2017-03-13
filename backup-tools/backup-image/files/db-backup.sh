@@ -19,6 +19,8 @@ CUR_TS="$(date +%Y%m%d%H%M)"
 LAST_BACKUP_FILE="/tmp/last_backup_timestap"
 PIDFILE="/var/run/db-backup.pid"
 
+swift download -o $LAST_BACKUP_FILE db_backup ${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}/last_backup_timestap
+
 if [ -f "$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat $LAST_BACKUP_FILE)"
 else
@@ -57,6 +59,8 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' "$SWIFT_CONTAINER/base" $BACKUP_BASE
 
+    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
+
     rm $PIDFILE
     exit 0
   fi
@@ -72,6 +76,9 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     # MySQL Backup (incremental)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=/backup/inc$CUR_TS --incremental-basedir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
+
+    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
+
     rm $PIDFILE
     exit 0
   fi
@@ -111,6 +118,8 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
       swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
     fi
 
+    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
+
     rm $PIDFILE
     exit 0
   fi
@@ -140,6 +149,8 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
     done
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..."
     swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+
+    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
