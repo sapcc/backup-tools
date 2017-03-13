@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "declare -x MY_POD_NAME=\"${MY_POD_NAME}\"" > /env.cron
 echo "declare -x MY_POD_NAMESPACE=\"${MY_POD_NAMESPACE}\"" >> /env.cron
-echo "declare -x BACKUP_EXPIRATION_INTERVAL=\"${BACKUP_EXPIRATION_INTERVAL}\"" >> /env.cron
+echo "declare -x BACKUP_EXPIRE_AFTER=\"${BACKUP_EXPIRE_AFTER}\"" >> /env.cron
 echo "declare -x OS_AUTH_URL=\"${OS_AUTH_URL}\"" >> /env.cron
 echo "declare -x OS_AUTH_VERSION=\"${OS_AUTH_VERSION}\"" >> /env.cron
 echo "declare -x OS_IDENTITY_API_VERSION=\"${OS_IDENTITY_API_VERSION}\"" >> /env.cron
