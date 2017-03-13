@@ -1,9 +1,12 @@
 #!/bin/bash
 
 PG_DUMP=1
-EXPIRE=0
 
 SWIFT_CONTAINER="db_backup/${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
+
+if [ "$BACKUP_EXPIRE_AFTER" == "" ] ; then
+  BACKUP_EXPIRE_AFTER=864000
+fi
 
 # We assume that the databases are using their default ports
 MYSQL_PORT=3306
@@ -52,7 +55,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
     # MySQL Backup (full)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload "$SWIFT_CONTAINER/base" $BACKUP_BASE
+    swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' "$SWIFT_CONTAINER/base" $BACKUP_BASE
 
     rm $PIDFILE
     exit 0
@@ -68,7 +71,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
     # MySQL Backup (incremental)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=/backup/inc$CUR_TS --incremental-basedir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
+    swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
     rm $PIDFILE
     exit 0
   fi
@@ -99,13 +102,13 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
         pg_dump -U postgres -h localhost $i --file=$BACKUP_BASE/$i.sql.gz -Z 5
       done
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-      swift upload --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
     else
       # Postgres Backup (full)
       /usr/bin/barman  cron
       /usr/bin/barman backup all
-      swift upload --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
-      swift upload --changed "$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
+      swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
     fi
 
     rm $PIDFILE
@@ -136,24 +139,9 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
       rm -rf $BACKUP_BASE/$i
     done
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..."
-    swift upload --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+    swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
 
     rm $PIDFILE
     exit 0
   fi
-fi
-
-if [ "$EXPIRE" = 1 ] ; then
-  if [ "$BACKUP_EXPIRATION_INTERVAL" = "" ] ; then
-    BACKUP_EXPIRE="10 days"
-  else
-    BACKUP_EXPIRE="$BACKUP_EXPIRATION_INTERVAL"
-  fi
-  EXPIRE_DATE="`date -d -\"$BACKUP_EXPIRE\" +\"%Y%m%d%H%M\"`"
-  for i in `swift list $BACKUP_BASE` ; do
-    BACKUP_DATE="`echo $i | cut -d / -f 1`"
-    if [ "$BACKUP_DATE" -le "$EXPIRE_DATE" ] ; then
-      echo "swift delete db_backup $BACKUP_BASE/$i"
-    fi
-  done
 fi
