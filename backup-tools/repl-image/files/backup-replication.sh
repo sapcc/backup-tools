@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ "$BACKUP_EXPIRE_AFTER" = "" ] ; then
+  BACKUP_EXPIRE_AFTER=864000
+fi
+
 if [ ! -f /backup/env/from.env ] || [ ! -f /backup/env/to1.env ] ; then
   echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Configuration files missing, check helm deployment."
   exit 1
@@ -42,7 +46,7 @@ for i in /backup/env/to*.env ; do
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backups to $REPLICATE_TO..."
     for i in $REPL_OBJECTS ; do
       echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
-      swift upload db_backup $i
+      swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" db_backup $i
     done
 
     rm -rf /backup/tmp/*
