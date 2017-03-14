@@ -16,10 +16,10 @@ PGSQL_SOCKET=/db/socket/.s.PGSQL.$PGSQL_PORT
 PGSQL_BARMAN_DIR=/var/lib/barman/
 
 CUR_TS="$(date +%Y%m%d%H%M)"
-LAST_BACKUP_FILE="/tmp/last_backup_timestap"
+LAST_BACKUP_FILE="/tmp/last_backup_timestamp"
 PIDFILE="/var/run/db-backup.pid"
 
-swift download -o $LAST_BACKUP_FILE db_backup staging/c5211168/mysql$LAST_BACKUP_FILE$LAST_BACKUP_FILE
+swift download -o $LAST_BACKUP_FILE db_backup staging/c5211168/$MY_POD_NAME$LAST_BACKUP_FILE$LAST_BACKUP_FILE
 
 if [ -f "$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat $LAST_BACKUP_FILE)"
