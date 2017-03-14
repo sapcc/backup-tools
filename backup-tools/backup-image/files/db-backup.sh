@@ -60,6 +60,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/base" $BACKUP_BASE
 
     swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
@@ -78,6 +79,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
 
     swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
@@ -119,6 +121,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
     fi
 
     swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
@@ -151,6 +154,7 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
     swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
 
     swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
