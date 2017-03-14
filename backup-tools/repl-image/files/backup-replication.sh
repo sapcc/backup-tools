@@ -9,6 +9,16 @@ if [ ! -f /backup/env/from.env ] || [ ! -f /backup/env/to1.env ] ; then
   exit 1
 fi
 
+PIDFILE="/var/run/backup-replication.pid"
+
+if [ -f "$PIDFILE" ] ; then
+  PID="`cat $PIDFILE`"
+  if [ -e /proc/$PID -a /proc/$PID/exe ] ; then
+    echo "Backup already in progress..."
+    exit 1
+  fi
+fi
+
 source /backup/env/from.env
 
 REPLICATE_FROM="$OS_REGION_NAME"
@@ -19,6 +29,8 @@ if [ ! -d /backup/tmp ] ; then
 fi
 
 cd /backup/tmp
+
+echo $$ > $PIDFILE
 
 for i in /backup/env/to*.env ; do
 
@@ -54,3 +66,5 @@ for i in /backup/env/to*.env ; do
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') No new backups to transfer."
   fi
 done
+
+rm $PIDFILE
