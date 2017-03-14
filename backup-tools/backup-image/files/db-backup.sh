@@ -19,7 +19,7 @@ CUR_TS="$(date +%Y%m%d%H%M)"
 LAST_BACKUP_FILE="/tmp/last_backup_timestap"
 PIDFILE="/var/run/db-backup.pid"
 
-swift download -o $LAST_BACKUP_FILE db_backup staging/c5211168/mysql/$LAST_BACKUP_FILE
+swift download -o $LAST_BACKUP_FILE db_backup staging/c5211168/mysql$LAST_BACKUP_FILE$LAST_BACKUP_FILE
 
 if [ -f "$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat $LAST_BACKUP_FILE)"
@@ -59,7 +59,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/base" $BACKUP_BASE
 
-    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
@@ -78,7 +78,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=/backup/inc$CUR_TS --incremental-basedir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
 
-    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
@@ -120,7 +120,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
       swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
     fi
 
-    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
@@ -153,7 +153,7 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..."
     swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
 
-    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
 
     rm $PIDFILE
