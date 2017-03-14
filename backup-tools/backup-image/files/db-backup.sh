@@ -4,7 +4,7 @@ PG_DUMP=1
 
 SWIFT_CONTAINER="db_backup/${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
 
-if [ "$BACKUP_EXPIRE_AFTER" == "" ] ; then
+if [ "$BACKUP_EXPIRE_AFTER" = "" ] ; then
   BACKUP_EXPIRE_AFTER=864000
 fi
 
@@ -19,7 +19,7 @@ CUR_TS="$(date +%Y%m%d%H%M)"
 LAST_BACKUP_FILE="/tmp/last_backup_timestap"
 PIDFILE="/var/run/db-backup.pid"
 
-swift download -o $LAST_BACKUP_FILE db_backup ${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}/last_backup_timestap
+swift download -o $LAST_BACKUP_FILE db_backup staging/c5211168/mysql/$LAST_BACKUP_FILE
 
 if [ -f "$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat $LAST_BACKUP_FILE)"
@@ -57,9 +57,9 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
     # MySQL Backup (full)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' "$SWIFT_CONTAINER/base" $BACKUP_BASE
+    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/base" $BACKUP_BASE
 
-    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
@@ -75,9 +75,9 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
     # MySQL Backup (incremental)
     xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=/backup/inc$CUR_TS --incremental-basedir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
+    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
 
-    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
@@ -109,16 +109,16 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
         pg_dump -U postgres -h localhost $i --file=$BACKUP_BASE/$i.sql.gz -Z 5
       done
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-      swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
     else
       # Postgres Backup (full)
       /usr/bin/barman  cron
       /usr/bin/barman backup all
-      swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
-      swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
+      swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/WAL" $PGSQL_BARMAN_DIR
     fi
 
-    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
@@ -148,9 +148,9 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
       rm -rf $BACKUP_BASE/$i
     done
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..."
-    swift upload --header 'X-Delete-After: $BACKUP_EXPIRE_AFTER' --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
 
-    swift upload $SWIFT_CONTAINER/last_backup_timestap $LAST_BACKUP_FILE
+    swift upload $SWIFT_CONTAINER/$LAST_BACKUP_FILE $LAST_BACKUP_FILE
 
     rm $PIDFILE
     exit 0
