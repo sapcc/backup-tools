@@ -61,9 +61,6 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
-
-    rm $PIDFILE
-    exit 0
   fi
 
   if [ "$IS_NEXT_TS_INCR" -ge "$LAST_BACKUP_TS" ] ; then
@@ -81,8 +78,6 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
 
-    rm $PIDFILE
-    exit 0
   fi
 
 fi
@@ -122,9 +117,6 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
-
-    rm $PIDFILE
-    exit 0
   fi
 fi
 
@@ -155,8 +147,8 @@ if [ "$BACKUP_INFLUXDB_FULL" ] ; then
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
-
-    rm $PIDFILE
-    exit 0
   fi
 fi
+
+rm -f $PIDFILE
+exit 0
