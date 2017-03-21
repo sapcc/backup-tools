@@ -45,22 +45,17 @@ for i in /backup/env/to*.env ; do
   if [ "$REPL_OBJECTS" != "" ] ; then
     source /backup/env/from.env
 
-    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading backups from $REPLICATE_FROM..."
-    for i in $REPL_OBJECTS ; do
-      if [ ! -f $i ] ; then
-        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
-        swift download db_backup $i
+    for j in $REPL_OBJECTS ; do
+      if [ ! -f $j ] ; then
+        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading from $OS_REGION_NAME "
+        source /backup/env/from.env
+        swift download db_backup $j
+        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading to $REPLICATE_TO "
+        source $i
+        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" db_backup $j
+        rm -rf $j
       fi
     done
-
-    source $i
-
-    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backups to $REPLICATE_TO..."
-    for i in $REPL_OBJECTS ; do
-      echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') "
-      swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" db_backup $i
-    done
-
     rm -rf /backup/tmp/*
   else
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') No new backups to transfer."
