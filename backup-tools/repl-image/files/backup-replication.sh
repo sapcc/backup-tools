@@ -47,10 +47,10 @@ for i in /backup/env/to*.env ; do
 
     for j in $REPL_OBJECTS ; do
       if [ ! -f $j ] ; then
-        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading from $OS_REGION_NAME "
+        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading from $REPLICATE_FROM: "
         source /backup/env/from.env
         swift download db_backup $j
-        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading to $REPLICATE_TO "
+        echo -n "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading to $REPLICATE_TO: "
         source $i
         swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" db_backup $j
         rm -rf $j
