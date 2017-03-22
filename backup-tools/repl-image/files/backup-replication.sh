@@ -14,7 +14,7 @@ PIDFILE="/var/run/backup-replication.pid"
 if [ -f "$PIDFILE" ] ; then
   PID="`cat $PIDFILE`"
   if [ -e /proc/$PID -a /proc/$PID/exe ] ; then
-    echo "Backup already in progress..."
+    echo "Replication already in progress..."
     exit 1
   fi
 fi
