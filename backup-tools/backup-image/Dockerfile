@@ -4,7 +4,6 @@ MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.t
 
 ENV INFLUXVER=1.2.0
 
-ADD files/crontab /etc/cron.d/db-backup
 ADD files/db-backup.sh /usr/local/sbin/db-backup.sh
 ADD files/backup-run.sh /usr/local/sbin/backup-run.sh
 
@@ -24,7 +23,7 @@ RUN mkdir /backup \
 	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /etc/apt/sources.list.d/postgresql.list \
 	&& wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
 	&& apt-get update && apt-get dist-upgrade -y \
-	&& apt-get install -y --no-install-recommends mariadb-client python-swiftclient cron barman percona-xtrabackup-24 \
+	&& apt-get install -y --no-install-recommends mariadb-client python-swiftclient percona-xtrabackup-24 \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& dpkg --purge postgresql-client-9.5 \
 	&& wget "https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXVER}_amd64.deb" \
@@ -34,9 +33,7 @@ RUN mkdir /backup \
 	&& rm *.deb \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/* \
-	&& chmod 0644 /etc/cron.d/db-backup \
-	&& ln -sf /proc/1/fd/1 /var/log/backup.log \
-	&& touch /var/log/cron.log
+	&& ln -sf /proc/1/fd/1 /var/log/backup.log
 
 VOLUME ["/backup"]
 
