@@ -23,4 +23,8 @@ else
   echo "declare -x MYSQL_ROOT_PASSWORD=\"${MYSQL_ROOT_PASSWORD}\"" >> /env.cron
 fi
 chmod 600 /env.cron
-cron -f
+
+while true; do
+  /usr/local/sbin/db-backup.sh
+  sleep 600
+done
