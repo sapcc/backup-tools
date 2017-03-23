@@ -1,3 +1,5 @@
 #!/bin/bash
-chmod 600 /backup/env/*
-cron -f
+while true; do
+  /usr/local/sbin/backup-replication.sh
+  sleep 14400
+done
