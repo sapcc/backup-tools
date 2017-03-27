@@ -53,35 +53,23 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
   IS_NEXT_TS_INCR="$(date --date="now - $INTERVAL_INCR" +%Y%m%d%H%M)"
 
-  if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
+  if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] || [ "$IS_NEXT_TS_INCR" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
     echo "$CUR_TS" > $LAST_BACKUP_FILE
 
     # MySQL Backup (full)
-    xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/base" $BACKUP_BASE
+    #xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
+    for i in `mysql --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET -e 'show databases' | awk '{print $1}' | grep -E -v "(^Database$|^information_schema$|^performance_schema$)"`; do
+      echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
+      mysqldump --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET $i > $BACKUP_BASE/$i.sql
+      gzip -f $BACKUP_BASE/$i.sql
+    done
+    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
+    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
   fi
-
-  if [ "$IS_NEXT_TS_INCR" -ge "$LAST_BACKUP_TS" ] ; then
-    echo $$ > $PIDFILE
-    echo "$CUR_TS" > $LAST_BACKUP_FILE
-
-    if [ -d "/backup/inc$LAST_BACKUP_TS" ] ; then
-      BACKUP_BASE=/backup/inc$LAST_BACKUP_TS
-    fi
-
-    # MySQL Backup (incremental)
-    xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=/backup/inc$CUR_TS --incremental-basedir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" "$SWIFT_CONTAINER/inc$CUR_TS" /backup/inc$CUR_TS
-
-    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
-    rm -f $LAST_BACKUP_FILE
-
-  fi
-
 fi
 
 if [ "$BACKUP_PGSQL_FULL" ] ; then
