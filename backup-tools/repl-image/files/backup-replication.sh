@@ -4,7 +4,7 @@ if [ "$BACKUP_EXPIRE_AFTER" = "" ] ; then
   BACKUP_EXPIRE_AFTER=864000
 fi
 
-if [ ! -f /backup/env/from.env ] || [ ! -f /backup/env/to1.env ] ; then
+if [ ! -f /backup/env/from.env ] || [ ! -f /backup/env/to0.env ] ; then
   echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Configuration files missing, check helm deployment."
   exit 1
 fi
