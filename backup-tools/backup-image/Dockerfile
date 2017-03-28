@@ -22,6 +22,7 @@ RUN mkdir /backup \
 	&& apt-get install -y --no-install-recommends mariadb-client python-swiftclient \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& dpkg --purge postgresql-client-9.5 \
+	&& apt-get install -y --no-install-recommends postgresql-client \
 	&& wget "https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXVER}_amd64.deb" \
 	&& dpkg -i influxdb_${INFLUXVER}_amd64.deb \
 	&& wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb \
