@@ -13,7 +13,7 @@ RUN mkdir /backup \
 	&& echo "APT::Install-Suggests "0";" > /etc/apt/apt.conf.d/99local \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& apt-get update && apt-get upgrade -y \
-	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates \
+	&& apt-get install -y --no-install-recommends wget curl lsb-release ca-certificates \
 	&& apt-get install -y --no-install-recommends python-swiftclient \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb \
