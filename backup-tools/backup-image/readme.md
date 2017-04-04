@@ -4,6 +4,9 @@ Where every you need a backup for postgres, mariadb and influxdb you have to add
 
 ### helm-charts
 In the relevant chart, the following changes are to be made through to setting up:
+
+To finde the backup image_version `grep -r '  image_version' .`
+
 ##### charts/(postgres|mariadb|influx)/values.yaml - default settings - if not already used a requirment depencie -
 This config is the default value with a disabled backup.
 ```
@@ -158,6 +161,9 @@ and there value files:
 # To update only to the newest version:
 
 ### openstack-helm
+
+To finde the backup image_version `grep -r '  image_version' .`
+
 ##### (postgres|mariadb)/values.yaml - default settings
 Update the `ìmage_version:` see `<<<<< Change version here`
 ```
