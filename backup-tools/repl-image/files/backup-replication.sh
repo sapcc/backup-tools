@@ -40,7 +40,7 @@ for i in /backup/env/to*.env ; do
   source $i
   swift list db_backup | grep "^$REPLICATE_FROM/" > /backup/tmp/to.log
 
-  REPL_OBJECTS="`cat /backup/tmp/from.log /backup/tmp/to.log | sort | uniq -u`"
+  REPL_OBJECTS="`diff -u /backup/tmp/from.log /backup/tmp/to.log | grep -v -E "(^\+\+\+|^\-\-\-|^\@\@)" | grep "^\-" | cut -d "-" -f 2-`"
 
   if [ "$REPL_OBJECTS" != "" ] ; then
     source /backup/env/from.env
