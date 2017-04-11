@@ -15,15 +15,12 @@ RUN mkdir /backup \
 	&& echo "APT::Install-Suggests "0";" > /etc/apt/apt.conf.d/99local \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& apt-get update && apt-get upgrade -y \
-	&& apt-get install -y --no-install-recommends wget curl lsb-release ca-certificates \
+	&& apt-get install -y --no-install-recommends curl lsb-release ca-certificates \
 	&& apt-get install -y --no-install-recommends python-swiftclient \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
-	&& wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb \
-	&& dpkg -i dumb-init_1.2.0_amd64.deb \
-	&& rm *.deb \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/*
 
 VOLUME ["/backup"]
 
-CMD ["/usr/bin/dumb-init", "/usr/local/sbin/replication-run.sh"]
+CMD ["/usr/local/sbin/replication-run"]
