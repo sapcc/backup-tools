@@ -5,6 +5,8 @@ MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.t
 ADD files/replication-run.sh /usr/local/sbin/replication-run.sh
 ADD files/backup-replication.sh /usr/local/sbin/backup-replication.sh
 
+ADD files/replication-run.tar /
+
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
 	&& sed -i s/archive\.ubuntu\.com/de\.archive\.ubuntu\.com/g /etc/apt/sources.list \
