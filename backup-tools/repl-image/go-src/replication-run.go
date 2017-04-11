@@ -15,7 +15,6 @@ func main() {
 		command.Stderr = os.Stderr
 		if err := command.Run(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
 		}
 		time.Sleep(14400 * time.Second)
 	}
