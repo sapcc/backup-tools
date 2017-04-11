@@ -10,7 +10,10 @@ import (
 func main() {
 	cmd := "/usr/local/sbin/backup-replication.sh"
 	for {
-		if err := exec.Command(cmd).Run(); err != nil {
+		command := exec.Command(cmd)
+		command.Stdout = os.Stdout
+		command.Stderr = os.Stderr
+		if err := command.Run(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
