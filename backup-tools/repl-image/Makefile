@@ -15,7 +15,7 @@ endif
 
 .PHONY: build
 build:
-	docker build -t go-build:latest --rm go-src/
+	docker build $(BUILD_ARGS) -t go-build:latest --rm go-src/
 	docker run go-build tar -cvf - /usr/local/sbin/replication-run > files/replication-run.tar
 	docker build $(BUILD_ARGS) -t $(REGISTRY)/$(IMAGE):$(VERSION) --rm .
 
