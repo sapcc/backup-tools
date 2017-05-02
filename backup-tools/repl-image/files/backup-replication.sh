@@ -31,11 +31,10 @@ cd /backup/tmp
 
 echo $$ > $PIDFILE
 
+source /backup/env/from.env
+swift list db_backup --prefix "$REPLICATE_FROM" > /backup/tmp/from.log
+
 for i in /backup/env/to*.env ; do
-
-  source /backup/env/from.env
-  swift list db_backup --prefix "$REPLICATE_FROM" > /backup/tmp/from.log
-
   source $i
   REPLICATE_TO="$OS_REGION_NAME"
 
@@ -57,7 +56,7 @@ for i in /backup/env/to*.env ; do
         rm -rf $j
       fi
     done
-    rm -rf /backup/tmp/*
+    rm -rf /backup/tmp/to.log
   else
     echo "$(date +'%Y/%m/%d %H:%M:%S %Z') No new backups to transfer."
   fi
