@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM hub.global.cloud.sap/monsoon/ubuntu:test16.04
 
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
 
