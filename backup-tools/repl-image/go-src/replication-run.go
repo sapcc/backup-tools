@@ -40,12 +40,12 @@ func main() {
 			Email: "norbert.tretkowski@sap.com",
 		},
 	}
-	app.Usage = "Database Backup Replication"
+	app.Usage = "Replicating Database Backups around the world"
 	app.Action = runServer
 	app.Run(os.Args)
 }
 
-func runServer( c *cli.Context) {
+func runServer(c *cli.Context) {
 	lastRun.Set(0)
 	go func() {
 		cmd := "/usr/local/sbin/backup-replication.sh"
