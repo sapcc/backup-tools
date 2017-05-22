@@ -5,10 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"time"
+	"net/http"
+	"log"
 
 	"github.com/urfave/cli"
-	//"github.com/prometheus/client_golang/prometheus"
-	//"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -16,19 +18,17 @@ const (
 )
 
 var (
-	landingPage = []byte(fmt.Sprintf(`<html>
-<head><title>Database Backup Replication Exporter</title></head>
-<body>
-<h1>Database Backup Replication Exporter</h1>
-<p>%s</p>
-<p><a href='/metrics'>Metrics</a></p>
-</body>
-</html>
-`, versionString()))
+	lastRun = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "last_successful_run",
+		Help: "Unix Timestamp of last successful database backup replication run",
+	})
 
-	Version   = "develop"
-	GITCOMMIT = "HEAD"
+	registry = prometheus.NewRegistry()
 )
+
+func init() {
+	registry.MustRegister(lastRun)
+}
 
 func main() {
 	app := cli.NewApp()
@@ -46,6 +46,7 @@ func main() {
 }
 
 func runServer( c *cli.Context) {
+	lastRun.Set(0)
 	go func() {
 		cmd := "/usr/local/sbin/backup-replication.sh"
 		for {
@@ -58,6 +59,9 @@ func runServer( c *cli.Context) {
 			time.Sleep(14400 * time.Second)
 		}
 	}()
+
+	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func versionString() string {
