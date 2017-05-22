@@ -223,7 +223,7 @@ func appQuest1() error {
 
     if listInt, err := strconv.Atoi(text); err == nil {
         if len(list) > listInt && listInt > 0 {
-            //fmt.Printf("%v is in map\n", listInt)
+            fmt.Printf("The next step can take a while... please wait...")
             // ToDo: add next step - download backup data
             _ = appQuest2(listInt)
         } else {
@@ -298,10 +298,12 @@ func appProcessRestore() error {
             }
         }
     }
-
-    if backupType == "influxdb" {
-        _ = exeCmd("chown -R influxdb:influxdb " + influxDBPath)
-    }
+    /*
+       Not needed in containter as root...
+       if backupType == "influxdb" {
+          _ = exeCmd("chown -R influxdb:influxdb " + influxDBPath)
+       }
+    */
     return appQuit()
 }
 

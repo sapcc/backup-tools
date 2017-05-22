@@ -117,7 +117,9 @@ func SwiftDownloadPrefix(clientSwift swift.Connection, prefix string) ([]string,
 
     // TODO: download files via SwiftDownloadFile and add file to objects
     for _, str := range list {
-
+        if strings.HasPrefix(str, "mysql.") {
+            continue
+        }
         file, err := SwiftDownloadFile(clientSwift, str)
         if err != nil {
             return nil, err
