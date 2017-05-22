@@ -102,6 +102,9 @@ func deleteFile(path string) error {
 func deleteEmpty(s []string) []string {
     var r []string
     for _, str := range s {
+        if strings.HasSuffix(str, "mysql.gz") {
+            continue
+        }
         if str != "" {
             r = append(r, str)
         }
@@ -112,6 +115,9 @@ func deleteEmpty(s []string) []string {
 func deleteNoGzSuffix(s []string) []string {
     var r []string
     for _, str := range s {
+        if strings.HasSuffix(str, "mysql.gz") {
+            continue
+        }
         if strings.HasSuffix(str, ".gz") {
             r = append(r, str)
         }
