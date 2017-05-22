@@ -31,7 +31,17 @@ func SwiftConnection(
     projectDomainName,
     region,
     contPrefix string,
-) {
+) swift.Connection {
+
+    fmt.Println(version,
+        endpoint,
+        username,
+        password,
+        userDomainName,
+        projectName,
+        projectDomainName,
+        region,
+        contPrefix)
 
     vInt, _ := strconv.Atoi(version)
     // Create a connection
@@ -52,14 +62,14 @@ func SwiftConnection(
         panic(err)
     }
 
-    return
+    return client
 }
 
 // SwiftListFiles swift list all files in container
-func SwiftListFiles() ([]string, error) {
+func SwiftListFiles(clientSwift swift.Connection) ([]string, error) {
     objects := make([]string, 0)
-    err := client.ObjectsWalk(containerName, nil, func(opts *swift.ObjectsOpts) (interface{}, error) {
-        newObjects, err := client.ObjectNames(containerName, opts)
+    err := clientSwift.ObjectsWalk(containerName, nil, func(opts *swift.ObjectsOpts) (interface{}, error) {
+        newObjects, err := clientSwift.ObjectNames(containerName, opts)
         if err == nil {
             objects = append(objects, newObjects...)
         }
@@ -70,13 +80,13 @@ func SwiftListFiles() ([]string, error) {
 }
 
 // SwiftListPrefixFiles swift list all files in container with this prefix
-func SwiftListPrefixFiles(prefix string) ([]string, error) {
+func SwiftListPrefixFiles(clientSwift swift.Connection, prefix string) ([]string, error) {
     opts := swift.ObjectsOpts{
         Prefix: prefix,
     }
     objects := make([]string, 0)
-    err := client.ObjectsWalk(containerName, &opts, func(opts *swift.ObjectsOpts) (interface{}, error) {
-        newObjects, err := client.ObjectNames(containerName, opts)
+    err := clientSwift.ObjectsWalk(containerName, &opts, func(opts *swift.ObjectsOpts) (interface{}, error) {
+        newObjects, err := clientSwift.ObjectNames(containerName, opts)
         if err == nil {
             objects = append(objects, newObjects...)
         }
@@ -87,45 +97,46 @@ func SwiftListPrefixFiles(prefix string) ([]string, error) {
 }
 
 // SwiftDownloadFile swift download this file from container
-func SwiftDownloadFile(file string) error {
+func SwiftDownloadFile(clientSwift swift.Connection, file string) (string, error) {
     var w io.Writer
     var bw *bufio.Writer
 
     mypath := filepath.Join(backupPath, path.Base(file))
     outFile, err := os.Create(mypath)
     if err != nil {
-        return err
+        return "", err
     }
     bw = bufio.NewWriter(outFile)
     w = bw
     defer outFile.Close()
     defer bw.Flush()
 
-    _, err = client.ObjectGet(containerName, file, w, false, nil)
-    return err
+    _, err = clientSwift.ObjectGet(containerName, file, w, false, nil)
+    return mypath, err
 }
 
 //SwiftDownloadPrefix swift download all files from container that start with this prefix
-func SwiftDownloadPrefix(prefix string) error {
-    list, err := SwiftListPrefixFiles(prefix)
+func SwiftDownloadPrefix(clientSwift swift.Connection, prefix string) ([]string, error) {
+    list, err := SwiftListPrefixFiles(clientSwift, prefix)
     if err != nil {
-        return err
+        return nil, err
     }
     if len(list) == 0 {
-        return errors.New("Prefix List empty")
+        return nil, errors.New("Prefix List empty")
     }
 
     // list of localfiles
-    //objects := make([]string, 0)
+    objects := make([]string, 0)
 
     // TODO: download files via SwiftDownloadFile and add file to objects
     for _, str := range list {
-        err := SwiftDownloadFile(str)
+        file, err := SwiftDownloadFile(clientSwift, str)
         if err != nil {
-            return err
+            return nil, err
         }
+        objects = append(objects, file)
     }
-    return nil
+    return objects, nil
 }
 
 //UnpackFiles Unpack files like .tar.gz and .gz
