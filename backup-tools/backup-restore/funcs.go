@@ -26,15 +26,15 @@ var (
     backupPath   = "/newbackup"
     influxDBPath = "/var/lib/influx"
 
-    containerPrefix       = "staging/limes/limes-postgresql"
-    authVersion           = "3"
-    authEndpoint          = "https://identity-3.staging.cloud.sap/v3"
-    authUsername          = "db_backup"
-    authPassword          = "Dw9QKthZRCUMQUf"
-    authUserDomainName    = "Default"
-    authProjectName       = "master"
-    authProjectDomainName = "ccadmin"
-    authRegion            = "staging"
+    containerPrefix       string
+    authVersion           string
+    authEndpoint          string
+    authUsername          string
+    authPassword          string
+    authUserDomainName    string
+    authProjectName       string
+    authProjectDomainName string
+    authRegion            string
 )
 
 type environmentStruct struct {

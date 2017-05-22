@@ -15,8 +15,11 @@ import (
 
     "./internal"
 
+    "github.com/ncw/swift"
     "gopkg.in/urfave/cli.v1"
 )
+
+var clientSwift swift.Connection
 
 func appQuit() error {
 
@@ -167,7 +170,7 @@ func startRestoreInit() error {
         authProjectDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectDomainName")))
         authRegion = os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName")))
 
-        SwiftConnection(
+        clientSwift = SwiftConnection(
             authVersion, authEndpoint, authUsername, authPassword, authUserDomainName, authProjectName, authProjectDomainName, authRegion, containerPrefix,
         )
     }
@@ -192,7 +195,7 @@ func startRestoreInit() error {
 
 func appQuest1() error {
 
-    list, err := SwiftListPrefixFiles(containerPrefix)
+    list, err := SwiftListPrefixFiles(clientSwift, containerPrefix)
 
     if err != nil {
         return cli.NewExitError("-- E: 200.050 --", 12)
@@ -247,7 +250,7 @@ func appQuest2(index int) error {
 
     fmt.Println(slicedStr)
 
-    _, err := SwiftDownloadPrefix(strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME"), slicedStr[3], "backup", backupType, "base"}, "/"))
+    _, err := SwiftDownloadPrefix(clientSwift, strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME"), slicedStr[3], "backup", backupType, "base"}, "/"))
     if err != nil {
         log.Fatal(err)
     }
