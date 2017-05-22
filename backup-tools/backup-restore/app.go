@@ -18,18 +18,6 @@ import (
     "gopkg.in/urfave/cli.v1"
 )
 
-var (
-    containerPrefix       = "staging/limes/limes-postgresql"
-    authVersion           = "3"
-    authEndpoint          = "https://identity-3.staging.cloud.sap/v3"
-    authUsername          = "db_backup"
-    authPassword          = "Dw9QKthZRCUMQUf"
-    authUserDomainName    = "Default"
-    authProjectName       = "master"
-    authProjectDomainName = "ccadmin"
-    authRegion            = "staging"
-)
-
 func appQuit() error {
 
     fmt.Println("Clearing " + backupPath + " ...")
@@ -259,7 +247,7 @@ func appQuest2(index int) error {
 
     fmt.Println(slicedStr)
 
-    err := SwiftDownloadPrefix(strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME"), slicedStr[3], "backup", backupType, "base"}, "/"))
+    _, err := SwiftDownloadPrefix(strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME"), slicedStr[3], "backup", backupType, "base"}, "/"))
     if err != nil {
         log.Fatal(err)
     }

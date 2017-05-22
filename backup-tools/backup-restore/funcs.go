@@ -14,6 +14,44 @@ import (
     "unicode/utf8"
 )
 
+const (
+    longForm      = "200601021504"
+    containerName = "db_backup"
+)
+
+var (
+    list         string
+    list2        []string
+    backupType   string
+    backupPath   = "/newbackup"
+    influxDBPath = "/var/lib/influx"
+
+    containerPrefix       = "staging/limes/limes-postgresql"
+    authVersion           = "3"
+    authEndpoint          = "https://identity-3.staging.cloud.sap/v3"
+    authUsername          = "db_backup"
+    authPassword          = "Dw9QKthZRCUMQUf"
+    authUserDomainName    = "Default"
+    authProjectName       = "master"
+    authProjectDomainName = "ccadmin"
+    authRegion            = "staging"
+)
+
+type environmentStruct struct {
+    MyPodName            string `json:"mpn1,omitempty"`
+    MyPodNamespace       string `json:"mpn2,omitempty"`
+    OsAuthURL            string `json:"oau,omitempty"`
+    OsAuthVersion        string `json:"oauv,omitempty"`
+    OsIdentityAPIVersion string `json:"oiav,omitempty"`
+    OsUsername           string `json:"ou,omitempty"`
+    OsUserDomainName     string `json:"oud,omitempty"`
+    OsProjectName        string `json:"opn,omitempty"`
+    OsProjectDomainName  string `json:"opdn,omitempty"`
+    OsRegionName         string `json:"orn,omitempty"`
+    OsPassword           string `json:"op,omitempty"`
+    InfluxdbRootPassword string `json:"irp,omitempty"`
+}
+
 func exeCmd(cmd string) string {
     //fmt.Println("command is ", cmd)
     // splitting head => g++ parts => rest of the command

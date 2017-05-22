@@ -87,14 +87,14 @@ func SwiftListPrefixFiles(prefix string) ([]string, error) {
 }
 
 // SwiftDownloadFile swift download this file from container
-func SwiftDownloadFile(file string) error {
+func SwiftDownloadFile(file string) (string, error) {
     var w io.Writer
     var bw *bufio.Writer
 
     mypath := filepath.Join(backupPath, path.Base(file))
     outFile, err := os.Create(mypath)
     if err != nil {
-        return err
+        return "", err
     }
     bw = bufio.NewWriter(outFile)
     w = bw
@@ -102,30 +102,31 @@ func SwiftDownloadFile(file string) error {
     defer bw.Flush()
 
     _, err = client.ObjectGet(containerName, file, w, false, nil)
-    return err
+    return mypath, err
 }
 
 //SwiftDownloadPrefix swift download all files from container that start with this prefix
-func SwiftDownloadPrefix(prefix string) error {
+func SwiftDownloadPrefix(prefix string) ([]string, error) {
     list, err := SwiftListPrefixFiles(prefix)
     if err != nil {
-        return err
+        return nil, err
     }
     if len(list) == 0 {
-        return errors.New("Prefix List empty")
+        return nil, errors.New("Prefix List empty")
     }
 
     // list of localfiles
-    //objects := make([]string, 0)
+    objects := make([]string, 0)
 
     // TODO: download files via SwiftDownloadFile and add file to objects
     for _, str := range list {
-        err := SwiftDownloadFile(str)
+        file, err := SwiftDownloadFile(str)
         if err != nil {
-            return err
+            return nil, err
         }
+        objects = append(objects, file)
     }
-    return nil
+    return objects, nil
 }
 
 //UnpackFiles Unpack files like .tar.gz and .gz
