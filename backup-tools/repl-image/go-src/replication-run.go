@@ -56,6 +56,7 @@ func runServer( c *cli.Context) {
 			if err := command.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
+			lastRun.Set(float64(time.Now().Unix()))
 			time.Sleep(14400 * time.Second)
 		}
 	}()
