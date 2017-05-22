@@ -93,7 +93,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
     if [ "$PG_DUMP" = 1 ] ; then
       for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
-        pg_dump -U postgres -h localhost $i --file=$BACKUP_BASE/$i.sql.gz -Z 5
+        pg_dump -U postgres -h localhost -c --if-exist -C $i --file=$BACKUP_BASE/$i.sql.gz -Z 5
       done
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
       swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
