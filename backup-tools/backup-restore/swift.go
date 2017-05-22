@@ -3,8 +3,9 @@ package main
 import (
     "bufio"
     "errors"
-    "fmt"
+    //"fmt"
     "io"
+    "log"
     "os"
     "path"
     "path/filepath"
@@ -12,10 +13,6 @@ import (
     "strings"
 
     "github.com/ncw/swift"
-)
-
-var (
-    client *swift.Connection
 )
 
 // SwiftConnection connect swift
@@ -32,16 +29,6 @@ func SwiftConnection(
     region,
     contPrefix string,
 ) swift.Connection {
-
-    fmt.Println(version,
-        endpoint,
-        username,
-        password,
-        userDomainName,
-        projectName,
-        projectDomainName,
-        region,
-        contPrefix)
 
     vInt, _ := strconv.Atoi(version)
     // Create a connection
@@ -75,7 +62,7 @@ func SwiftListFiles(clientSwift swift.Connection) ([]string, error) {
         }
         return newObjects, err
     })
-    fmt.Println("Found all the objects", objects, err)
+    //fmt.Println("Found all the objects", objects, err)
     return objects, err
 }
 
@@ -92,7 +79,7 @@ func SwiftListPrefixFiles(clientSwift swift.Connection, prefix string) ([]string
         }
         return newObjects, err
     })
-    fmt.Println("Found all the prefix objects", objects, err)
+    //fmt.Println("Found all the prefix objects", objects, err)
     return objects, err
 }
 
@@ -130,6 +117,7 @@ func SwiftDownloadPrefix(clientSwift swift.Connection, prefix string) ([]string,
 
     // TODO: download files via SwiftDownloadFile and add file to objects
     for _, str := range list {
+
         file, err := SwiftDownloadFile(clientSwift, str)
         if err != nil {
             return nil, err
@@ -142,19 +130,32 @@ func SwiftDownloadPrefix(clientSwift swift.Connection, prefix string) ([]string,
 //UnpackFiles Unpack files like .tar.gz and .gz
 func UnpackFiles(files []string) error {
     for _, file := range files {
-
         if strings.HasSuffix(file, ".tar.gz") {
 
-            ungzip(file, strings.TrimSuffix(file, ".gz"))
-            untar(strings.TrimSuffix(file, ".gz"), strings.TrimSuffix(file, ".tar"))
+            err := ungzip(file, backupPath)
+            if err != nil {
+                log.Println("ungzip", file, backupPath)
+                log.Fatal(err)
+            }
+            err = untarSplit(strings.TrimSuffix(file, ".gz"), backupPath)
+            if err != nil {
+                log.Println("untarSplit", strings.TrimSuffix(file, ".gz"), backupPath)
+                log.Fatal(err)
+            }
+            defer os.Remove(file)
+            defer os.Remove(strings.TrimSuffix(file, ".gz"))
 
         } else if strings.HasSuffix(file, ".gz") {
 
-            ungzip(file, strings.TrimSuffix(file, ".gz"))
+            err := ungzip(file, backupPath)
+            if err != nil {
+                log.Println(file, backupPath)
+                log.Fatal(err)
+            }
+            defer os.Remove(file)
 
-        } else {
-            return errors.New("Unknown archive - must be .tar.gz or .gz file")
         }
+
     }
     return nil
 }

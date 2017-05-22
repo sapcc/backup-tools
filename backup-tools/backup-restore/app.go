@@ -25,7 +25,7 @@ func appQuit() error {
 
     fmt.Println("Clearing " + backupPath + " ...")
 
-    _ = os.RemoveAll(backupPath)
+    //_ = os.RemoveAll(backupPath)
 
     fmt.Println("Clearing " + backupPath + " done!")
 
@@ -158,22 +158,23 @@ func startRestoreInit() error {
             os.Setenv(strings.ToUpper(internal.Underscore("InfluxdbRootPassword")), jsonReturn.InfluxdbRootPassword)
         }
 
-    } else {
-
-        containerPrefix = strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
-        authVersion = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion")))
-        authEndpoint = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL")))
-        authUsername = os.Getenv(strings.ToUpper(internal.Underscore("OsUsername")))
-        authPassword = os.Getenv(strings.ToUpper(internal.Underscore("OsPassword")))
-        authUserDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsUserDomainName")))
-        authProjectName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectName")))
-        authProjectDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectDomainName")))
-        authRegion = os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName")))
-
-        clientSwift = SwiftConnection(
-            authVersion, authEndpoint, authUsername, authPassword, authUserDomainName, authProjectName, authProjectDomainName, authRegion, containerPrefix,
-        )
     }
+
+    containerPrefix = strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
+    authVersion = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion")))
+    authEndpoint = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL")))
+    authUsername = os.Getenv(strings.ToUpper(internal.Underscore("OsUsername")))
+    authPassword = os.Getenv(strings.ToUpper(internal.Underscore("OsPassword")))
+    authUserDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsUserDomainName")))
+    authProjectName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectName")))
+    authProjectDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectDomainName")))
+    authRegion = os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName")))
+
+    clientSwift = SwiftConnection(
+        authVersion, authEndpoint, authUsername, authPassword, authUserDomainName, authProjectName, authProjectDomainName, authRegion, containerPrefix,
+    )
+
+    os.Mkdir(backupPath, 0777)
     /*
        fmt.Println("Original : ", intSlice[:])
        sort.Ints(intSlice)
@@ -210,7 +211,7 @@ func appQuest1() error {
 
         if myStr[3] != "" && myStr[7] != "" {
             t, _ := time.Parse(longForm, myStr[3])
-            fmt.Println(leftPad(strconv.Itoa(id), 3, "0"), ") ", myStr[0], "/", myStr[1], "/", myStr[2], " - ", myStr[7], " at ", t)
+            fmt.Println(leftPad(strconv.Itoa(id), 3, "0"), ") ", myStr[0], "/", myStr[1], "/", myStr[2], " at ", t, " - ", myStr[7])
         }
     }
 
@@ -243,12 +244,10 @@ func appQuest1() error {
 
 // download backup
 func appQuest2(index int) error {
-    fmt.Printf("%v is in map\n", index)
 
-    fmt.Println(list2[index])
     slicedStr := strings.Split(list2[index], "/")
 
-    fmt.Println(slicedStr)
+    //fmt.Println(slicedStr)
 
     _, err := SwiftDownloadPrefix(clientSwift, strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME"), slicedStr[3], "backup", backupType, "base"}, "/"))
     if err != nil {
@@ -270,36 +269,30 @@ func appQuest2(index int) error {
         log.Fatal(err)
     }
 
-    return appQuit()
+    return appProcessRestore()
 }
 
 func appProcessRestore() error {
 
     files, _ := ioutil.ReadDir(backupPath)
     for _, f := range files {
-        if !f.IsDir() {
-            if strings.HasSuffix(f.Name(), ".gz") {
-                filePath := []string{backupPath}
-                filePath = append(filePath, f.Name())
-
-                _ = deleteFile(strings.Join(filePath, "/"))
-                fmt.Println("delete not needed file: " + f.Name())
-
-            } else if strings.HasSuffix(f.Name(), ".sql") {
+        if f.Name() == "." || f.Name() == ".." {
+            continue
+        } else if strings.HasPrefix(f.Name(), "mysql.") {
+            continue
+        } else if !f.IsDir() {
+            if strings.HasSuffix(f.Name(), ".sql") {
 
                 table := strings.TrimSuffix(f.Name(), ".sql")
 
                 if backupType == "mysql" {
-                    return appMysqlDB(table)
+                    appMysqlDB(table)
                 } else if backupType == "pgsql" {
-                    return appPgsqlDB(table)
+                    appPgsqlDB(table)
                 }
             }
 
         } else {
-            if f.Name() == "." || f.Name() == ".." {
-                continue
-            }
             if backupType == "influxdb" {
                 _ = appInfluxDB(f.Name())
             }
@@ -309,27 +302,31 @@ func appProcessRestore() error {
     if backupType == "influxdb" {
         _ = exeCmd("chown -R influxdb:influxdb " + influxDBPath)
     }
-    return nil
+    return appQuit()
 }
 
 func appInfluxDB(table string) error {
 
-    _ = exeCmd("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
-    _ = exeCmd("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
+    //_ = exeCmd("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
+    log.Println("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
+    //_ = exeCmd("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
+    log.Println("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
     fmt.Println(">> database restore done: " + table)
     return nil
 }
 
 func appMysqlDB(table string) error {
 
-    _ = exeCmdBashC("mysql -u root " + table + " < " + backupPath + "/" + table + ".sql")
+    //_ = exeCmdBashC("mysql -u root " + table + " < " + backupPath + "/" + table + ".sql")
+    log.Println("mysql -u root " + table + " < " + backupPath + "/" + table + ".sql")
     fmt.Println(">> database restore done: " + table)
     return nil
 }
 
 func appPgsqlDB(table string) error {
 
-    _ = exeCmd("pg_restore -U postgres -h localhost --clean --create -d " + table + " " + backupPath + "/" + table + ".sql")
+    //_ = exeCmd("pg_restore -U postgres -h localhost --clean --create -d " + table + " " + backupPath + "/" + table + ".sql")
+    log.Println("pg_restore -U postgres -h localhost --clean --create -d " + table + " " + backupPath + "/" + table + ".sql")
     fmt.Println(">> database restore done: " + table)
     return nil
 }

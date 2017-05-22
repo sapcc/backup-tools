@@ -271,7 +271,15 @@ func ungzip(source, target string) error {
     }
     defer archive.Close()
 
-    target = filepath.Join(target, archive.Name)
+    var tfile string
+
+    if archive.Name == "" {
+        tfile = strings.TrimSuffix(source, ".gz")
+    } else {
+        tfile = archive.Name
+    }
+
+    target = filepath.Join(target, tfile)
     writer, err := os.Create(target)
     if err != nil {
         return err
