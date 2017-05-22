@@ -210,10 +210,10 @@ func appQuest1() error {
         return cli.NewExitError("-- E: 200.050 --", 12)
     }
 
-    list = deleteNoGzSuffix(deleteEmpty(list))
-    sort.Strings(list)
+    list2 = deleteNoGzSuffix(deleteEmpty(list))
+    sort.Strings(list2)
 
-    for id, str := range list {
+    for id, str := range list2 {
         myStr := strings.Split(str, "/")
         // fmt.Printf("%q\n", myStr)
 
@@ -254,8 +254,8 @@ func appQuest1() error {
 func appQuest2(index int) error {
     fmt.Printf("%v is in map\n", index)
 
-    fmt.Println(list[index])
-    slicedStr := strings.Split(list[index], "/")
+    fmt.Println(list2[index])
+    slicedStr := strings.Split(list2[index], "/")
 
     fmt.Println(slicedStr)
 
@@ -270,7 +270,11 @@ func appQuest2(index int) error {
     }
 
     files, _ := ioutil.ReadDir(backupPath)
-    err = UnpackFiles(files)
+    objects := make([]string, 0)
+    for _, file := range files {
+        objects = append(objects, file.Name())
+    }
+    err = UnpackFiles(objects)
     if err != nil {
         log.Fatal(err)
     }

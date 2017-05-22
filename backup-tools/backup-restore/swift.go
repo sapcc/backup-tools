@@ -8,6 +8,7 @@ import (
     "os"
     "path"
     "path/filepath"
+    "strconv"
     "strings"
 
     "github.com/ncw/swift"
@@ -32,10 +33,11 @@ func SwiftConnection(
     contPrefix string,
 ) {
 
+    vInt, _ := strconv.Atoi(version)
     // Create a connection
     //initialize Swift connection
     client := swift.Connection{
-        AuthVersion:  version,
+        AuthVersion:  vInt,
         AuthUrl:      endpoint,
         UserName:     username,
         Domain:       userDomainName,
@@ -114,10 +116,10 @@ func SwiftDownloadPrefix(prefix string) error {
     }
 
     // list of localfiles
-    objects := make([]string, 0)
+    //objects := make([]string, 0)
 
     // TODO: download files via SwiftDownloadFile and add file to objects
-    for id, str := range list {
+    for _, str := range list {
         err := SwiftDownloadFile(str)
         if err != nil {
             return err
@@ -132,12 +134,12 @@ func UnpackFiles(files []string) error {
 
         if strings.HasSuffix(file, ".tar.gz") {
 
-            unzip(file, strings.TrimSuffix(file, ".gz"))
+            ungzip(file, strings.TrimSuffix(file, ".gz"))
             untar(strings.TrimSuffix(file, ".gz"), strings.TrimSuffix(file, ".tar"))
 
         } else if strings.HasSuffix(file, ".gz") {
 
-            unzip(file, strings.TrimSuffix(file, ".gz"))
+            ungzip(file, strings.TrimSuffix(file, ".gz"))
 
         } else {
             return errors.New("Unknown archive - must be .tar.gz or .gz file")
