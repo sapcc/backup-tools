@@ -223,7 +223,7 @@ func appQuest1() error {
 
     if listInt, err := strconv.Atoi(text); err == nil {
         if len(list) > listInt && listInt > 0 {
-            fmt.Printf("The next step can take a while... please wait...")
+            fmt.Println("The next step can take a while... please wait...")
             // ToDo: add next step - download backup data
             _ = appQuest2(listInt)
         } else {
@@ -309,26 +309,32 @@ func appProcessRestore() error {
 
 func appInfluxDB(table string) error {
 
-    //_ = exeCmd("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
     log.Println("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
-    //_ = exeCmd("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
+    _ = exeCmd("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
+
     log.Println("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
+    _ = exeCmd("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
+
     fmt.Println(">> database restore done: " + table)
     return nil
 }
 
 func appMysqlDB(table string) error {
 
-    //_ = exeCmdBashC("mysql -u root " + table + " < " + backupPath + "/" + table + ".sql")
-    log.Println("mysql -u root " + table + " < " + backupPath + "/" + table + ".sql")
+    log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+
+    _ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+
     fmt.Println(">> database restore done: " + table)
     return nil
 }
 
 func appPgsqlDB(table string) error {
 
-    //_ = exeCmd("pg_restore -U postgres -h localhost --clean --create -d " + table + " " + backupPath + "/" + table + ".sql")
-    log.Println("pg_restore -U postgres -h localhost --clean --create -d " + table + " " + backupPath + "/" + table + ".sql")
+    log.Println("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
+
+    _ = exeCmd("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
+
     fmt.Println(">> database restore done: " + table)
     return nil
 }
