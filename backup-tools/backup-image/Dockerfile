@@ -3,6 +3,7 @@ FROM hub.global.cloud.sap/monsoon/ubuntu:test16.04
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
 
 ENV INFLUXVER=1.2.0
+ENV RESTOREVER=0.1.0
 
 ADD files/db-backup.sh /usr/local/sbin/db-backup.sh
 ADD files/backup-run.sh /usr/local/sbin/backup-run.sh
@@ -23,6 +24,8 @@ RUN mkdir /backup \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& wget "https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXVER}_amd64.deb" \
 	&& dpkg -i influxdb_${INFLUXVER}_amd64.deb \
+	&& wget -O /usr/local/bin/backup-restore https://github.com/sapcc/containers/releases/download/restore-v${RESTOREVER}/backup-restore.linux_amd64 \
+	&& chmod a+x /usr/local/bin/backup-restore \
 	&& wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb \
 	&& dpkg -i dumb-init_1.2.0_amd64.deb \
 	&& rm *.deb \
