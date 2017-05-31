@@ -62,4 +62,6 @@ for i in /backup/env/to*.env ; do
   fi
 done
 
+date +'%s' > /backup/tmp/last_run
+
 rm $PIDFILE
