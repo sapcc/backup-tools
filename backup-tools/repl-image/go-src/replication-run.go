@@ -18,16 +18,22 @@ const (
 )
 
 var (
-	lastRun = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "last_successful_run",
+	lastSuccess = prometheus.NewGauge(prometheus.GaugeOpts {
+		Name: "last_success",
 		Help: "Unix Timestamp of last successful database backup replication run",
+	})
+
+	lastError = prometheus.NewGauge(prometheus.GaugeOpts {
+		Name: "last_error",
+		Help: "Unix Timestamp of last failed database backup replication run",
 	})
 
 	registry = prometheus.NewRegistry()
 )
 
 func init() {
-	registry.MustRegister(lastRun)
+	registry.MustRegister(lastSuccess)
+	registry.MustRegister(lastError)
 }
 
 func main() {
@@ -46,7 +52,8 @@ func main() {
 }
 
 func runServer(c *cli.Context) {
-	lastRun.Set(0)
+	lastSuccess.Set(0)
+	lastError.Set(0)
 	go func() {
 		cmd := "/usr/local/sbin/backup-replication.sh"
 		for {
@@ -55,8 +62,10 @@ func runServer(c *cli.Context) {
 			command.Stderr = os.Stderr
 			if err := command.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
+				lastError.Set(float64(time.Now().Unix()))
+			} else {
+				lastSuccess.Set(float64(time.Now().Unix()))
 			}
-			lastRun.Set(float64(time.Now().Unix()))
 			time.Sleep(14400 * time.Second)
 		}
 	}()
