@@ -19,22 +19,22 @@ const (
 
 var (
 	lastSuccess = prometheus.NewGauge(prometheus.GaugeOpts {
-		Name: "last_success",
+		Name: "backup_replication_last_success",
 		Help: "Unix Timestamp of last successful replication run",
 	})
 
 	lastError = prometheus.NewGauge(prometheus.GaugeOpts {
-		Name: "last_error",
+		Name: "backup_replication_last_error",
 		Help: "Unix Timestamp of last failed replication run",
 	})
 
 	countSuccess = prometheus.NewCounter(prometheus.CounterOpts {
-		Name: "count_success",
+		Name: "backup_replication_count_success",
 		Help: "Counter for successful replication runs",
 	})
 
 	countError = prometheus.NewCounter(prometheus.CounterOpts {
-		Name: "count_error",
+		Name: "backup_replication_count_error",
 		Help: "Counter for failed replication runs",
 	})
 
