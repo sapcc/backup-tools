@@ -38,6 +38,15 @@ var (
 		Help: "Counter for failed replication runs",
 	})
 
+	replBegin = prometheus.NewGauge(prometheus.GaugeOpts {
+		Name: "backup_replication_last_start",
+		Help: "Unix Timestamp of last replication start",
+	})
+
+	replFinish = prometheus.NewGauge(prometheus.GaugeOpts {
+		Name: "backup_replication_last_finish",
+		Help: "Unix Timestampf of last replication finish",
+	})
 
 	registry = prometheus.NewRegistry()
 )
@@ -47,6 +56,8 @@ func init() {
 	registry.MustRegister(lastError)
 	registry.MustRegister(countSuccess)
 	registry.MustRegister(countError)
+	registry.MustRegister(replBegin)
+	registry.MustRegister(replFinish)
 }
 
 func main() {
@@ -73,6 +84,7 @@ func runServer(c *cli.Context) {
 			command := exec.Command(cmd)
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
+			replBegin.Set(float64(time.Now().Unix()))
 			if err := command.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				lastError.Set(float64(time.Now().Unix()))
@@ -81,6 +93,7 @@ func runServer(c *cli.Context) {
 				lastSuccess.Set(float64(time.Now().Unix()))
 				countSuccess.Inc()
 			}
+			replFinish.Set(float64(time.Now().Unix()))
 			time.Sleep(14400 * time.Second)
 		}
 	}()
