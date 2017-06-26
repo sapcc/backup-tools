@@ -70,7 +70,7 @@ func main() {
 			Email: "norbert.tretkowski@sap.com",
 		},
 	}
-	app.Usage = "Replicating Database Backups around the world"
+	app.Usage = "Create Database Backups"
 	app.Action = runServer
 	app.Run(os.Args)
 }
