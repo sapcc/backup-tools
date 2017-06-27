@@ -14,7 +14,9 @@ func init() {
 {{if len .Authors}}
 AUTHOR:
    {{range .Authors}}{{ . }}{{end}}
-   {{end}}{{if .VisibleFlags}}
+   {{end}}{{if .Commands}}
+COMMANDS:
+{{range .Commands}}{{if not .HideHelp}}   {{join .Names ", "}}{{ "\t" }}{{.Usage}}{{ "\n" }}{{end}}{{end}}{{end}}{{if .VisibleFlags}}
 GLOBAL OPTIONS:
    {{range .VisibleFlags}}{{.}}
    {{end}}{{end}}{{if .Copyright }}
@@ -49,18 +51,17 @@ func main() {
 
     app.Commands = []cli.Command{
         {
-            Name:    "influxconfig",
-            Aliases: []string{"ic"},
-            Usage:   "create a influxdb config",
+            Name:    "createconfig",
+            Aliases: []string{"cc"},
+            Usage:   "create a config to download in an other region or to backup influxdb",
             Action: func(c *cli.Context) error {
-
-                return startInfluxInit()
+                return startCrossregionInit()
             },
         },
     }
 
     app.Action = func(ctx *cli.Context) error {
-        return startRestoreInit()
+        return startRestoreInit(false)
     }
 
     app.Run(os.Args)

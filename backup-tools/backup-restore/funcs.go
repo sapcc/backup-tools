@@ -10,8 +10,11 @@ import (
     "os"
     "os/exec"
     "path/filepath"
+    "sort"
     "strings"
     "unicode/utf8"
+
+    "github.com/xtgo/set"
 )
 
 const (
@@ -35,11 +38,11 @@ var (
     authProjectName       string
     authProjectDomainName string
     authRegion            string
+    mysqlRootPassword     string
 )
 
 type environmentStruct struct {
-    MyPodName            string `json:"mpn1,omitempty"`
-    MyPodNamespace       string `json:"mpn2,omitempty"`
+    ContainerPrefix      string `json:"cp,omitempty"`
     OsAuthURL            string `json:"oau,omitempty"`
     OsAuthVersion        string `json:"oauv,omitempty"`
     OsIdentityAPIVersion string `json:"oiav,omitempty"`
@@ -49,7 +52,6 @@ type environmentStruct struct {
     OsProjectDomainName  string `json:"opdn,omitempty"`
     OsRegionName         string `json:"orn,omitempty"`
     OsPassword           string `json:"op,omitempty"`
-    InfluxdbRootPassword string `json:"irp,omitempty"`
 }
 
 func exeCmd(cmd string) string {
@@ -123,6 +125,18 @@ func deleteNoGzSuffix(s []string) []string {
         }
     }
     return r
+}
+
+func makePrefixPathOnly(s []string) []string {
+    var r []string
+    for _, str := range s {
+        r = append(r, filepath.Dir(str))
+    }
+    data := sort.StringSlice(r)
+    sort.Sort(data)
+    n := set.Uniq(data) // Uniq returns the size of the set
+    data = data[:n]
+    return data
 }
 
 func times(str string, n int) (out string) {

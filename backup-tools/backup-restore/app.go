@@ -8,7 +8,6 @@ import (
     "io/ioutil"
     "log"
     "os"
-    "sort"
     "strconv"
     "strings"
     "time"
@@ -25,7 +24,7 @@ func appQuit() error {
 
     fmt.Println("Clearing " + backupPath + " ...")
 
-    //_ = os.RemoveAll(backupPath)
+    _ = os.RemoveAll(backupPath)
 
     fmt.Println("Clearing " + backupPath + " done!")
 
@@ -34,22 +33,10 @@ func appQuit() error {
     return cli.NewExitError("All Okay", 0)
 }
 
-func startInfluxInit() error {
-    if os.Getenv("INFLUXVER") != "" {
-        backupType = "influxdb"
-    }
-
-    if backupType == "" {
-        fmt.Println("\n\nNo System for the backup restore found.")
-        fmt.Println("\n\nFor Postgres and MariaDB/MySQL you can run this backup-restore programm in the \"backup\" container")
-        fmt.Println("Please RUN for Postgresql and MariaDB/MySQL\n# backup-restore\nin the backup-container")
-        fmt.Println("\n\n******** * * EXIT NO SUPPORTED SYSTEM FOUND * * ********")
-        return cli.NewExitError("-- E: 192902 --", 1)
-    }
+func startCrossregionInit() error {
 
     group := environmentStruct{
-        MyPodName:            os.Getenv(strings.ToUpper(internal.Underscore("MyPodName"))),
-        MyPodNamespace:       os.Getenv(strings.ToUpper(internal.Underscore("MyPodNamespace"))),
+        ContainerPrefix:      strings.Join([]string{os.Getenv("BACKUP_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/"),
         OsAuthURL:            os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL"))),
         OsAuthVersion:        os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion"))),
         OsIdentityAPIVersion: os.Getenv(strings.ToUpper(internal.Underscore("OsIdentityAPIVersion"))),
@@ -59,7 +46,6 @@ func startInfluxInit() error {
         OsProjectDomainName:  os.Getenv(strings.ToUpper(internal.Underscore("OsProjectDomainName"))),
         OsRegionName:         os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName"))),
         OsPassword:           os.Getenv(strings.ToUpper(internal.Underscore("OsPassword"))),
-        InfluxdbRootPassword: os.Getenv(strings.ToUpper(internal.Underscore("InfluxdbRootPassword"))),
     }
 
     data, err := json.Marshal(group)
@@ -75,33 +61,29 @@ func startInfluxInit() error {
     return nil
 }
 
-func startRestoreInit() error {
-    fmt.Println("Welcome to the Backup-Restore process!")
-    fmt.Println("Please follow the instructions to the end to restore your backup.")
-    fmt.Println("With the \"QUIT\" command on user-input requests, you can stop the backup process.")
-    fmt.Println("\n\nPress 'Enter' to continue...")
-    bufio.NewReader(os.Stdin).ReadBytes('\n')
-
+func startRestoreInit(cc bool) error {
+    if !cc {
+        fmt.Println("Welcome to the Backup-Restore process!")
+        fmt.Println("Please follow the instructions to the end to restore your backup.")
+        fmt.Println("With the \"QUIT\" command on user-input requests, you can stop the backup process.")
+        fmt.Println("\n\nPress 'Enter' to continue...")
+        bufio.NewReader(os.Stdin).ReadBytes('\n')
+    }
     if os.Getenv("BACKUP_PGSQL_FULL") != "" {
         backupType = "pgsql"
     } else if os.Getenv("BACKUP_MYSQL_FULL") != "" {
         backupType = "mysql"
-    } else if os.Getenv("INFLUXVER") != "" {
-        backupType = "influxdb"
     }
 
     if backupType == "" {
         fmt.Println("\n\nNo System for the backup restore found.")
-        fmt.Println("\n\nFor InfluxDB please RUN: # backup-restore ic")
-        fmt.Println("With the generated command, you can start the backup process in the InfluxDB Container!")
-        fmt.Println("\nfor Postgres and MariaDB/MySQL you can run this Backup-Restore programm in the \"backup\" container")
         fmt.Println("\n\n******** * * EXIT NO SUPPORTED SYSTEM FOUND * * ********")
         return cli.NewExitError("-- E: 1920291 --", 12)
-    } else if backupType == "influxdb" {
+    } else if cc == true {
     jumpToCJOFj30g2:
 
         reader := bufio.NewReader(os.Stdin)
-        fmt.Print("Please enter the string from the backup container command \"backup-restore ic\" as a single-line: ")
+        fmt.Print("Please enter the string from the backup container command \"backup-restore cc\" as a single-line: ")
         text, _ := reader.ReadString('\n')
         text = strings.TrimRight(text, "\n")
         if text == "" {
@@ -113,19 +95,17 @@ func startRestoreInit() error {
             fmt.Println("error:", err)
             return cli.NewExitError("-- Fatal Config Decoding E: 39303 --", 1)
         }
-        //fmt.Printf("%q\n", data)
+
+        // fmt.Printf("%q\n", data)
         var jsonReturn environmentStruct
         err = json.Unmarshal(data, &jsonReturn)
         if err != nil {
             return cli.NewExitError("-- Fatal Config Decoding E: 39343 --", 1)
         }
-        fmt.Printf("%+v", jsonReturn)
+        // fmt.Printf("%+v", jsonReturn)
 
-        if jsonReturn.MyPodName != "" {
-            os.Setenv(strings.ToUpper(internal.Underscore("MyPodName")), jsonReturn.MyPodName)
-        }
-        if jsonReturn.MyPodNamespace != "" {
-            os.Setenv(strings.ToUpper(internal.Underscore("MyPodNamespace")), jsonReturn.MyPodNamespace)
+        if jsonReturn.ContainerPrefix != "" {
+            os.Setenv(strings.ToUpper(internal.Underscore("ContainerPrefix")), jsonReturn.ContainerPrefix)
         }
         if jsonReturn.OsAuthURL != "" {
             os.Setenv(strings.ToUpper(internal.Underscore("OsAuthURL")), jsonReturn.OsAuthURL)
@@ -154,13 +134,11 @@ func startRestoreInit() error {
         if jsonReturn.OsPassword != "" {
             os.Setenv(strings.ToUpper(internal.Underscore("OsPassword")), jsonReturn.OsPassword)
         }
-        if jsonReturn.InfluxdbRootPassword != "" {
-            os.Setenv(strings.ToUpper(internal.Underscore("InfluxdbRootPassword")), jsonReturn.InfluxdbRootPassword)
-        }
 
     }
-
-    containerPrefix = strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
+    if containerPrefix := os.Getenv(strings.ToUpper(internal.Underscore("ContainerPrefix"))); containerPrefix == "" {
+        containerPrefix = strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
+    }
     authVersion = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion")))
     authEndpoint = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL")))
     authUsername = os.Getenv(strings.ToUpper(internal.Underscore("OsUsername")))
@@ -169,6 +147,7 @@ func startRestoreInit() error {
     authProjectName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectName")))
     authProjectDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectDomainName")))
     authRegion = os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName")))
+    mysqlRootPassword = os.Getenv(strings.ToUpper(internal.Underscore("MysqlRootPassword")))
 
     clientSwift = SwiftConnection(
         authVersion, authEndpoint, authUsername, authPassword, authUserDomainName, authProjectName, authProjectDomainName, authRegion, containerPrefix,
@@ -188,13 +167,13 @@ func startRestoreInit() error {
         fmt.Printf("%q\n", strings.Split("", "Bernardo O'Higgins"))
     */
 
-    _ = appQuest1()
+    _ = appQuest1(false)
 
     return nil
     return nil
 }
 
-func appQuest1() error {
+func appQuest1(full bool) error {
 
     list, err := SwiftListPrefixFiles(clientSwift, containerPrefix)
 
@@ -202,21 +181,39 @@ func appQuest1() error {
         return cli.NewExitError("-- E: 200.050 --", 12)
     }
 
-    list2 = deleteNoGzSuffix(deleteEmpty(list))
-    sort.Strings(list2)
+    list2 = makePrefixPathOnly(deleteNoGzSuffix(deleteEmpty(list)))
+
+    // Last 5 Backup List of backups
+    if !full {
+        length := len(list2)
+        start := length - 5
+
+        if start < 0 {
+            start = 0
+        }
+
+        if start > length {
+            start = length
+        }
+
+        list2 = list2[start:]
+    }
 
     for id, str := range list2 {
         myStr := strings.Split(str, "/")
         // fmt.Printf("%q\n", myStr)
 
-        if myStr[3] != "" && myStr[7] != "" {
+        if myStr[3] != "" {
             t, _ := time.Parse(longForm, myStr[3])
-            fmt.Println(leftPad(strconv.Itoa(id), 3, "0"), ") ", myStr[0], "/", myStr[1], "/", myStr[2], " at ", t, " - ", myStr[7])
+            fmt.Println(leftPad(strconv.Itoa(id+1), 3, "0"), ") ", myStr[0], "/", myStr[1], "/", myStr[2], " at ", t)
         }
     }
 
     reader := bufio.NewReader(os.Stdin)
-    fmt.Print("ID of backup to restore or \"QUIT\" to Exit: ")
+    fmt.Println("Cross-Region Backup (need Config-String) with \"crossregion\"")
+    fmt.Println("Full backup-list with \"full-list\"")
+    fmt.Println("Manual backup restore from /newbackup/ with \"manual\"")
+    fmt.Print("Enter ID of backup to restore or \"QUIT\" to Exit: ")
     text, _ := reader.ReadString('\n')
     text = strings.TrimRight(text, "\n")
     //fmt.Println(text)
@@ -230,26 +227,36 @@ func appQuest1() error {
             fmt.Printf("%v is no backup ID\n", listInt)
             fmt.Println("Restart - Backup List")
             time.Sleep(2 * time.Second)
-            _ = appQuest1()
+            _ = appQuest1(false)
         }
         return nil
+    } else if strings.ToLower(text) == "full-list" {
+        // do nothing
+        return appQuest1(true)
     } else if strings.ToLower(text) == "quit" {
         // do nothing
         return appQuit()
-    } else {
-        _ = appQuest1()
+    } else if strings.ToLower(text) == "manual" {
+        // do nothing
+        return appQuestManual()
+    } else if strings.ToLower(text) == "crossregion" {
+        // do nothing
+        return startRestoreInit(true)
     }
-    return nil
+
+    return appQuest1(false)
 }
 
 // download backup
 func appQuest2(index int) error {
+    // normalize index
+    index = index - 1
 
     slicedStr := strings.Split(list2[index], "/")
 
-    //fmt.Println(slicedStr)
+    fmt.Println("Download: " + list2[index])
 
-    _, err := SwiftDownloadPrefix(clientSwift, strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME"), slicedStr[3], "backup", backupType, "base"}, "/"))
+    _, err := SwiftDownloadPrefix(clientSwift, strings.Join([]string{containerPrefix, slicedStr[3], "backup", backupType, "base"}, "/"))
     if err != nil {
         log.Fatal(err)
     }
@@ -265,6 +272,28 @@ func appQuest2(index int) error {
         objects = append(objects, file.Name())
     }
     err = UnpackFiles(objects)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    return appProcessRestore()
+}
+
+// download backup
+func appQuestManual() error {
+    fmt.Println("Backup Manual from " + backupPath)
+
+    // change workingdir to  /newbackup
+    if err := os.Chdir(backupPath); err != nil {
+        log.Fatal(err)
+    }
+
+    files, _ := ioutil.ReadDir(backupPath)
+    objects := make([]string, 0)
+    for _, file := range files {
+        objects = append(objects, file.Name())
+    }
+    err := UnpackFiles(objects)
     if err != nil {
         log.Fatal(err)
     }
@@ -292,38 +321,18 @@ func appProcessRestore() error {
                 }
             }
 
-        } else {
-            if backupType == "influxdb" {
-                _ = appInfluxDB(f.Name())
-            }
         }
     }
-    /*
-       Not needed in containter as root...
-       if backupType == "influxdb" {
-          _ = exeCmd("chown -R influxdb:influxdb " + influxDBPath)
-       }
-    */
     return appQuit()
-}
-
-func appInfluxDB(table string) error {
-
-    log.Println("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
-    _ = exeCmd("influxd restore -metadir " + influxDBPath + "/meta " + backupPath + "/" + table)
-
-    log.Println("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
-    _ = exeCmd("influxd restore -database " + table + " -datadir " + influxDBPath + "/data " + backupPath + "/" + table)
-
-    fmt.Println(">> database restore done: " + table)
-    return nil
 }
 
 func appMysqlDB(table string) error {
 
-    log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+    //log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+    log.Println("mysql -u root -p'" + mysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
 
-    _ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+    //_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+    _ = exeCmdBashC("mysql -u root -p'" + mysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
 
     fmt.Println(">> database restore done: " + table)
     return nil

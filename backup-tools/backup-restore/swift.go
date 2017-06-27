@@ -3,7 +3,7 @@ package main
 import (
     "bufio"
     "errors"
-    //"fmt"
+    "fmt"
     "io"
     "log"
     "os"
@@ -87,6 +87,8 @@ func SwiftListPrefixFiles(clientSwift swift.Connection, prefix string) ([]string
 func SwiftDownloadFile(clientSwift swift.Connection, file string) (string, error) {
     var w io.Writer
     var bw *bufio.Writer
+
+    fmt.Println("Download File: " + file)
 
     mypath := filepath.Join(backupPath, path.Base(file))
     outFile, err := os.Create(mypath)
