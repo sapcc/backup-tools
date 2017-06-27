@@ -16,7 +16,7 @@ RUN mkdir /backup \
 	&& echo "APT::Install-Suggests "0";" > /etc/apt/apt.conf.d/99local \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& chmod a+x /usr/local/sbin/db-backup.sh \
-	&& chmod a+x /usr/local/sbin/backup-run.sh \
+	&& chmod a+x /usr/local/sbin/backup-run \
 	&& apt-get update && apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates \
 	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /etc/apt/sources.list.d/postgresql.list \
@@ -44,4 +44,4 @@ RUN mkdir /backup \
 
 VOLUME ["/backup"]
 
-CMD ["/usr/bin/dumb-init", "/usr/local/sbin/backup-run.sh"]
+CMD ["/usr/local/sbin/backup-run"]
