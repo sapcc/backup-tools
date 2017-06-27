@@ -28,8 +28,6 @@ RUN mkdir /backup \
 	&& dpkg -i influxdb_${INFLUXVER}_amd64.deb \
 	&& wget -O /usr/local/bin/backup-restore https://github.com/sapcc/containers/releases/download/restore-v${RESTOREVER}/backup-restore.linux_amd64 \
 	&& chmod a+x /usr/local/bin/backup-restore \
-	&& wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb \
-	&& dpkg -i dumb-init_1.2.0_amd64.deb \
 	&& rm *.deb \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/* \
