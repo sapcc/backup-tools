@@ -112,35 +112,35 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
   fi
 fi
 
-if [ "$BACKUP_INFLUXDB_FULL" ] ; then
-  BACKUP_BASE=/backup/influxdb/base
-  USERNAME=root
-  PASSWORD=$INFLUXDB_ROOT_PASSWORD
-
-  if [ ! -d "$BACKUP_BASE" ] ; then
-    mkdir -p "$BACKUP_BASE"
-  fi
-
-  INTERVAL_FULL="$BACKUP_INFLUXDB_FULL"
-  IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
-
-  if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
-    echo $$ > $PIDFILE
-    echo "$CUR_TS" > $LAST_BACKUP_FILE
-
-    for i in `influx -username "$USERNAME" -password "$PASSWORD" -execute 'show databases' -host localhost -port 8086 | grep -E -v "(^---|^_internal|^name|^$)"` ; do
-      echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
-      influxd backup -database $i -host localhost:8088 "$BACKUP_BASE/$i"
-      tar zcvf "$BACKUP_BASE/$i.tar.gz" "$BACKUP_BASE/$i"
-      rm -rf $BACKUP_BASE/$i
-    done
-    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..."
-    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
-
-    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
-    rm -f $LAST_BACKUP_FILE
-  fi
-fi
+#if [ "$BACKUP_INFLUXDB_FULL" ] ; then
+#  BACKUP_BASE=/backup/influxdb/base
+#  USERNAME=root
+#  PASSWORD=$INFLUXDB_ROOT_PASSWORD
+#
+#  if [ ! -d "$BACKUP_BASE" ] ; then
+#    mkdir -p "$BACKUP_BASE"
+#  fi
+#
+#  INTERVAL_FULL="$BACKUP_INFLUXDB_FULL"
+#  IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
+#
+#  if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
+#    echo $$ > $PIDFILE
+#    echo "$CUR_TS" > $LAST_BACKUP_FILE
+#
+#    for i in `influx -username "$USERNAME" -password "$PASSWORD" -execute 'show databases' -host localhost -port 8086 | grep -E -v "(^---|^_internal|^name|^$)"` ; do
+#      echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
+#      influxd backup -database $i -host localhost:8088 "$BACKUP_BASE/$i"
+#      tar zcvf "$BACKUP_BASE/$i.tar.gz" "$BACKUP_BASE/$i"
+#      rm -rf $BACKUP_BASE/$i
+#    done
+#    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to influxdb/$SWIFT_CONTAINER/$CUR_TS ..."
+#    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+#
+#    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+#    rm -f $LAST_BACKUP_FILE
+#  fi
+#fi
 
 rm -f $PIDFILE
 exit 0
