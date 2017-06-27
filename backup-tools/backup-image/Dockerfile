@@ -8,7 +8,7 @@ ENV RESTOREVER=0.1.0
 ADD files/db-backup.sh /usr/local/sbin/db-backup.sh
 #ADD files/backup-run.sh /usr/local/sbin/backup-run.sh
 
-ADD files/replication-run.tar /
+ADD files/backup-run.tar /
 
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
