@@ -25,7 +25,6 @@ RUN mkdir /backup \
 	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
 	&& wget -O /usr/local/bin/backup-restore https://github.com/sapcc/containers/releases/download/restore-v${RESTOREVER}/backup-restore.linux_amd64 \
 	&& chmod a+x /usr/local/bin/backup-restore \
-	&& rm *.deb \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& ln -sf /proc/1/fd/1 /var/log/backup.log \
