@@ -136,9 +136,16 @@ func startRestoreInit(cc bool) error {
         }
 
     }
-    if containerPrefix := os.Getenv(strings.ToUpper(internal.Underscore("ContainerPrefix"))); containerPrefix == "" {
-        containerPrefix = strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
+    
+    containerPrefix = os.Getenv(strings.ToUpper(internal.Underscore("ContainerPrefix")))
+
+    if containerPrefix == "" {
+
+        containerPrefix = strings.Join([]string{os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName"))), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
+        os.Setenv(strings.ToUpper(internal.Underscore("ContainerPrefix")), containerPrefix)
+
     }
+    
     authVersion = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion")))
     authEndpoint = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL")))
     authUsername = os.Getenv(strings.ToUpper(internal.Underscore("OsUsername")))
