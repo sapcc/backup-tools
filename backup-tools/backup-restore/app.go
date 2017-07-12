@@ -12,7 +12,7 @@ import (
     "strings"
     "time"
 
-    "./internal"
+    "github.com/sapcc/containers/backup-tools/backup-restore/internal"
 
     "github.com/ncw/swift"
     "gopkg.in/urfave/cli.v1"
@@ -136,7 +136,7 @@ func startRestoreInit(cc bool) error {
         }
 
     }
-    
+
     containerPrefix = os.Getenv(strings.ToUpper(internal.Underscore("ContainerPrefix")))
 
     if containerPrefix == "" {
@@ -145,7 +145,7 @@ func startRestoreInit(cc bool) error {
         os.Setenv(strings.ToUpper(internal.Underscore("ContainerPrefix")), containerPrefix)
 
     }
-    
+
     authVersion = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion")))
     authEndpoint = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL")))
     authUsername = os.Getenv(strings.ToUpper(internal.Underscore("OsUsername")))
