@@ -17,6 +17,8 @@ endif
 build:
 	docker build $(BUILD_ARGS) -t go-build:latest --rm go-src/
 	docker run go-build tar -cvf - /usr/local/sbin/backup-run > files/backup-run.tar
+	docker build $(BUILD_ARGS) -t go-build:latest --rm ../backup-restore
+	docker run go-build tar -cvf - /usr/local/sbin/backup-restore > files/backup-restore.tar
 	docker build $(BUILD_ARGS) -t $(REGISTRY)/$(IMAGE):$(VERSION) --rm .
 
 .PHONY: push
