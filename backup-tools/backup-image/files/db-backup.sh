@@ -65,8 +65,8 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
       gzip -f $BACKUP_BASE/$i.sql
     done
     if [ -s "$BACKUP_BASE/*.sql.gz" ] ; then
-    echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-    swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
+      swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
     fi
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
