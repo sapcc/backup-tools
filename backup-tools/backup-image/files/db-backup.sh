@@ -1,12 +1,5 @@
 #!/bin/bash
 
-if [ ! -f /backup/env/to0.env ] ; then
-  echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Configuration files missing, check helm deployment."
-  exit 1
-fi
-
-source /backup/env/to0.env
-
 PG_DUMP=1
 
 SWIFT_CONTAINER="db_backup/${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
