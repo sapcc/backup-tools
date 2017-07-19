@@ -68,11 +68,11 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
       mysqldump --opt --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET --databases $i > $BACKUP_BASE/$i.sql
       gzip -f $BACKUP_BASE/$i.sql
+      if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
+        echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
+        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+      fi
     done
-    if [ -s "$BACKUP_BASE/*.sql.gz" ] ; then
-      echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-      swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
-    fi
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
     rm -f $LAST_BACKUP_FILE
@@ -101,11 +101,11 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
       for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
         pg_dump -U postgres -h localhost -c --if-exist -C $i --file=$BACKUP_BASE/$i.sql.gz -Z 5
+        if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
+          echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
+          swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
+        fi
       done
-      if [ -s "$BACKUP_BASE/*.sql.gz" ] ; then
-        echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed "$SWIFT_CONTAINER/$CUR_TS" $BACKUP_BASE
-      fi
     else
       # Postgres Backup (full)
       /usr/bin/barman  cron
