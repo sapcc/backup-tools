@@ -19,6 +19,7 @@ CUR_TS="$(date +%Y%m%d%H%M)"
 LAST_BACKUP_FILE="/tmp/last_backup_timestamp"
 PIDFILE="/var/run/db-backup.pid"
 
+echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading last backup timestamp from $SWIFT_CONTAINER/$CUR_TS ..."
 swift download -o $LAST_BACKUP_FILE db_backup $OS_REGION_NAME/$MY_POD_NAMESPACE/$MY_POD_NAME$LAST_BACKUP_FILE$LAST_BACKUP_FILE
 
 if [ -f "$LAST_BACKUP_FILE" ] ; then
