@@ -94,7 +94,7 @@ func runServer(c *cli.Context) {
 				countSuccess.Inc()
 			}
 			backupFinish.Set(float64(time.Now().Unix()))
-			time.Sleep(3600 * time.Second)
+			time.Sleep(600 * time.Second)
 		}
 	}()
 
