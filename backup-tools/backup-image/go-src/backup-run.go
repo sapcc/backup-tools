@@ -99,7 +99,10 @@ func runServer(c *cli.Context) {
 	}()
 
 	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := os.Getenv("BACKUP_METRICS_PORT")
+	if port != "" {
+	  log.Fatal(http.ListenAndServe(":" + port, nil))
+	}
 }
 
 func versionString() string {
