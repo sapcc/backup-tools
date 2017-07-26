@@ -100,7 +100,9 @@ func runServer(c *cli.Context) {
 
 	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	port := os.Getenv("BACKUP_METRICS_PORT")
-	if port != "" {
+	if port == "" {
+	  log.Fatal(http.ListenAndServe(":9188", nil))
+	} else {
 	  log.Fatal(http.ListenAndServe(":" + port, nil))
 	}
 }
