@@ -69,7 +69,6 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     done
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
-    rm -f $LAST_BACKUP_FILE
   fi
 fi
 
@@ -109,7 +108,6 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
     fi
 
     swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
-    rm -f $LAST_BACKUP_FILE
   fi
 fi
 
