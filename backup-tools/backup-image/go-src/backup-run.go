@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 	"time"
 	"net/http"
 	"log"
@@ -85,12 +88,23 @@ func runServer(c *cli.Context) {
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
 			backupBegin.Set(float64(time.Now().Unix()))
+
+			t, err := ioutil.ReadFile("/tmp/last_backup_timestamp")
+			if err != nil {
+			  fmt.Print(err)
+			}
+			rx := regexp.MustCompile(`^([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$`)
+			ts := rx.ReplaceAllString(strings.Trim(string(t), "\n"), "$1-$2-$3 $4:$5:00 PM")
+
+			layout := "2006-01-02 03:04:05 PM"
+			timestamp, err := time.Parse(layout, ts)
+
 			if err := command.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				lastError.Set(float64(time.Now().Unix()))
 				countError.Inc()
 			} else {
-				lastSuccess.Set(float64(time.Now().Unix()))
+				lastSuccess.Set(float64(timestamp.Unix()))
 				countSuccess.Inc()
 			}
 			backupFinish.Set(float64(time.Now().Unix()))
