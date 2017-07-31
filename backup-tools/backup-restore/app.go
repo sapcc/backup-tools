@@ -226,7 +226,7 @@ func appQuest1(full bool) error {
     //fmt.Println(text)
 
     if listInt, err := strconv.Atoi(text); err == nil {
-        if len(list) > listInt && listInt > 0 {
+        if len(list) >= listInt && listInt > 0 {
             fmt.Println("The next step can take a while... please wait...")
             // ToDo: add next step - download backup data
             _ = appQuest2(listInt)
