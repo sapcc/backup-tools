@@ -50,9 +50,17 @@ Please create the directory `/newbackup/` in the root path of container `backup`
 
 After that, you can transfer your backup files to it. Example:
 
-`cat backup.tar.gz | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.tar.gz'`
-`cat backup.zip | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.zip'`
-`cat backup.sql | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.sql'`
+```
+cat backup.tar.gz | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.tar.gz'
+```
+
+```
+cat backup.zip | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.zip'
+```
+
+```
+cat backup.sql | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.sql'
+```
 
 When you have tranfered all your needed backup files, you can run `backup-restore` and enter `manual` to restore your backup from `/newbackup/`
 
