@@ -94,9 +94,9 @@ func runServer(c *cli.Context) {
 				fmt.Print(err)
 			}
 			rx := regexp.MustCompile(`^([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$`)
-			ts := rx.ReplaceAllString(strings.Trim(string(t), "\n"), "$1-$2-$3 $4:$5:00 PM")
+			ts := rx.ReplaceAllString(strings.Trim(string(t), "\n"), "$1-$2-$3 $4:$5:00")
 
-			layout := "2006-01-02 03:04:05 PM"
+			layout := "2006-01-02 15:04:05"
 			timestamp, err := time.Parse(layout, ts)
 
 			if err := command.Run(); err != nil {
