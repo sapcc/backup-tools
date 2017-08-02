@@ -5,60 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"time"
-	"net/http"
-	"log"
 
+	"github.com/sapcc/containers/backup-tools/go-src/prometheus"
 	"github.com/urfave/cli"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
 	appName = "Database Backup Replication"
 )
-
-var (
-	lastSuccess = prometheus.NewGauge(prometheus.GaugeOpts {
-		Name: "backup_replication_last_success",
-		Help: "Unix Timestamp of last successful replication run",
-	})
-
-	lastError = prometheus.NewGauge(prometheus.GaugeOpts {
-		Name: "backup_replication_last_error",
-		Help: "Unix Timestamp of last failed replication run",
-	})
-
-	countSuccess = prometheus.NewCounter(prometheus.CounterOpts {
-		Name: "backup_replication_count_success",
-		Help: "Counter for successful replication runs",
-	})
-
-	countError = prometheus.NewCounter(prometheus.CounterOpts {
-		Name: "backup_replication_count_error",
-		Help: "Counter for failed replication runs",
-	})
-
-	replBegin = prometheus.NewGauge(prometheus.GaugeOpts {
-		Name: "backup_replication_last_start",
-		Help: "Unix Timestamp of last replication start",
-	})
-
-	replFinish = prometheus.NewGauge(prometheus.GaugeOpts {
-		Name: "backup_replication_last_finish",
-		Help: "Unix Timestampf of last replication finish",
-	})
-
-	registry = prometheus.NewRegistry()
-)
-
-func init() {
-	registry.MustRegister(lastSuccess)
-	registry.MustRegister(lastError)
-	registry.MustRegister(countSuccess)
-	registry.MustRegister(countError)
-	registry.MustRegister(replBegin)
-	registry.MustRegister(replFinish)
-}
 
 func main() {
 	app := cli.NewApp()
@@ -69,6 +23,10 @@ func main() {
 			Name:  "Norbert Tretkowski",
 			Email: "norbert.tretkowski@sap.com",
 		},
+		{
+			Name:  "Josef Fröhle",
+			Email: "josef.froehle@sap.com",
+		},
 	}
 	app.Usage = "Replicating Database Backups around the world"
 	app.Action = runServer
@@ -76,30 +34,26 @@ func main() {
 }
 
 func runServer(c *cli.Context) {
-	lastSuccess.Set(0)
-	lastError.Set(0)
+	bp := prometheus.NewReplication()
 	go func() {
 		cmd := "/usr/local/sbin/backup-replication.sh"
 		for {
 			command := exec.Command(cmd)
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
-			replBegin.Set(float64(time.Now().Unix()))
+			bp.Beginn()
 			if err := command.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
-				lastError.Set(float64(time.Now().Unix()))
-				countError.Inc()
+				bp.SetError()
 			} else {
-				lastSuccess.Set(float64(time.Now().Unix()))
-				countSuccess.Inc()
+				bp.SetSuccess(nil)
 			}
-			replFinish.Set(float64(time.Now().Unix()))
+			bp.Finish()
 			time.Sleep(14400 * time.Second)
 		}
 	}()
 
-	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	bp.ServerStart()
 }
 
 func versionString() string {

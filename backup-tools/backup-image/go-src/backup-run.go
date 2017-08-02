@@ -3,65 +3,19 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sapcc/containers/backup-tools/go-src/prometheus"
 	"github.com/urfave/cli"
 )
 
 const (
 	appName = "Database Backup"
 )
-
-var (
-	lastSuccess = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_last_success",
-		Help: "Unix Timestamp of last successful backup run",
-	})
-
-	lastError = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_last_error",
-		Help: "Unix Timestamp of last failed backup run",
-	})
-
-	countSuccess = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "backup_count_success",
-		Help: "Counter for successful backup runs",
-	})
-
-	countError = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "backup_count_error",
-		Help: "Counter for failed backup runs",
-	})
-
-	backupBegin = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_last_start",
-		Help: "Unix Timestamp of last backup start",
-	})
-
-	backupFinish = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_last_finish",
-		Help: "Unix Timestampf of last backup finish",
-	})
-
-	registry = prometheus.NewRegistry()
-)
-
-func init() {
-	registry.MustRegister(lastSuccess)
-	registry.MustRegister(lastError)
-	registry.MustRegister(countSuccess)
-	registry.MustRegister(countError)
-	registry.MustRegister(backupBegin)
-	registry.MustRegister(backupFinish)
-}
 
 func main() {
 	app := cli.NewApp()
@@ -72,6 +26,10 @@ func main() {
 			Name:  "Norbert Tretkowski",
 			Email: "norbert.tretkowski@sap.com",
 		},
+		{
+			Name:  "Josef Fröhle",
+			Email: "josef.froehle@sap.com",
+		},
 	}
 	app.Usage = "Create Database Backups"
 	app.Action = runServer
@@ -79,15 +37,14 @@ func main() {
 }
 
 func runServer(c *cli.Context) {
-	lastSuccess.Set(0)
-	lastError.Set(0)
+	bp := prometheus.NewBackup()
 	go func() {
 		cmd := "/usr/local/sbin/db-backup.sh"
 		for {
 			command := exec.Command(cmd)
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
-			backupBegin.Set(float64(time.Now().Unix()))
+			bp.Beginn()
 
 			t, err := ioutil.ReadFile("/tmp/last_backup_timestamp")
 			if err != nil {
@@ -97,28 +54,20 @@ func runServer(c *cli.Context) {
 			ts := rx.ReplaceAllString(strings.Trim(string(t), "\n"), "$1-$2-$3 $4:$5:00")
 
 			layout := "2006-01-02 15:04:05"
-			timestamp, err := time.Parse(layout, ts)
+			timestamp, _ := time.Parse(layout, ts)
 
 			if err := command.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
-				lastError.Set(float64(time.Now().Unix()))
-				countError.Inc()
+				bp.SetError()
 			} else {
-				lastSuccess.Set(float64(timestamp.Unix()))
-				countSuccess.Inc()
+				bp.SetSuccess(&timestamp)
 			}
-			backupFinish.Set(float64(time.Now().Unix()))
+			bp.Finish()
 			time.Sleep(600 * time.Second)
 		}
 	}()
 
-	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-	port := os.Getenv("BACKUP_METRICS_PORT")
-	if port == "" {
-		log.Fatal(http.ListenAndServe(":9188", nil))
-	} else {
-		log.Fatal(http.ListenAndServe(":"+port, nil))
-	}
+	bp.ServerStart()
 }
 
 func versionString() string {
