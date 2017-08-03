@@ -28,7 +28,7 @@ func init() {
 	registry = prometheus.NewRegistry()
 }
 
-func (g *Gauge) initReplication() {
+func (g *Gauge) initBackup() {
 	g.lastSuccess = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "backup_last_success",
 		Help: "Unix Timestamp of last successful backup run",
@@ -62,7 +62,7 @@ func (g *Gauge) initReplication() {
 	g.registry()
 }
 
-func (g *Gauge) initBackup() {
+func (g *Gauge) initReplication() {
 	g.lastSuccess = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "backup_replication_last_success",
 		Help: "Unix Timestamp of last successful replication run",
