@@ -63,7 +63,7 @@ func runServer(c *cli.Context) {
 				bp.SetSuccess(&timestamp)
 			}
 			bp.Finish()
-			time.Sleep(600 * time.Second)
+			time.Sleep(300 * time.Second)
 		}
 	}()
 
