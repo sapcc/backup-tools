@@ -1,4 +1,4 @@
-package main
+package utils // import "github.com/sapcc/containers/backup-tools/go-src/utils"
 
 import (
 	"archive/tar"
@@ -17,14 +17,23 @@ import (
 	"github.com/xtgo/set"
 )
 
-var (
-	list       string
-	list2      []string
-	backupType string
-	backupPath = "/newbackup"
+const (
+	// BackupPath global const
+	BackupPath = "/newbackup"
 )
 
-func exeCmd(cmd string) string {
+var (
+	// List global var
+	List []string
+
+	// List2 global var
+	List2 []string
+
+	// BackupType global var
+	BackupType string
+)
+
+func ExeCmd(cmd string) string {
 	//fmt.Println("command is ", cmd)
 	// splitting head => g++ parts => rest of the command
 	parts := strings.Fields(cmd)
@@ -45,7 +54,7 @@ func exeCmd(cmd string) string {
 	return out.String()
 }
 
-func exeCmdBashC(cmd string) string {
+func ExeCmdBashC(cmd string) string {
 	//fmt.Println("command is ", cmd)
 	// splitting head => g++ parts => rest of the command
 	parts := "-c"
@@ -65,13 +74,13 @@ func exeCmdBashC(cmd string) string {
 	return out.String()
 }
 
-func deleteFile(path string) error {
+func DeleteFile(path string) error {
 	// delete file
 	var err = os.Remove(path)
 	return err
 }
 
-func deleteEmpty(s []string) []string {
+func DeleteEmpty(s []string) []string {
 	var r []string
 	for _, str := range s {
 		if strings.HasSuffix(str, "mysql.gz") {
@@ -84,7 +93,7 @@ func deleteEmpty(s []string) []string {
 	return r
 }
 
-func deleteNoGzSuffix(s []string) []string {
+func DeleteNoGzSuffix(s []string) []string {
 	var r []string
 	for _, str := range s {
 		if strings.HasSuffix(str, "mysql.gz") {
@@ -97,7 +106,7 @@ func deleteNoGzSuffix(s []string) []string {
 	return r
 }
 
-func makePrefixPathOnly(s []string) []string {
+func MakePrefixPathOnly(s []string) []string {
 	var r []string
 	for _, str := range s {
 		r = append(r, filepath.Dir(str))
@@ -118,11 +127,11 @@ func times(str string, n int) (out string) {
 
 // Left left-pads the string with pad up to len runes
 // len may be exceeded if
-func leftPad(str string, len int, pad string) string {
+func LeftPad(str string, len int, pad string) string {
 	return times(pad, len-utf8.RuneCountInString(str)) + str
 }
 
-func tarit(source, target string) error {
+func Tarit(source, target string) error {
 	filename := filepath.Base(source)
 	target = filepath.Join(target, fmt.Sprintf("%s.tar", filename))
 	tarfile, err := os.Create(target)
@@ -177,11 +186,11 @@ func tarit(source, target string) error {
 		})
 }
 
-func untar(tarball, target string) error {
+func Untar(tarball, target string) error {
 	return untar2Wrapped(tarball, target, false)
 }
 
-func untarSplit(tarball, target string) error {
+func UntarSplit(tarball, target string) error {
 	return untar2Wrapped(tarball, target, true)
 }
 
@@ -202,8 +211,8 @@ func untar2Wrapped(tarball, target string, strip bool) error {
 		}
 		fname := header.Name
 		if strip == true {
-			fname = strings.TrimPrefix(fname, "/backup/"+backupType+"/base/")
-			fname = strings.TrimPrefix(fname, "backup/"+backupType+"/base/")
+			fname = strings.TrimPrefix(fname, "/backup/"+BackupType+"/base/")
+			fname = strings.TrimPrefix(fname, "backup/"+BackupType+"/base/")
 		}
 		path := filepath.Join(target, fname)
 		info := header.FileInfo()
@@ -227,7 +236,7 @@ func untar2Wrapped(tarball, target string, strip bool) error {
 	return nil
 }
 
-func gzipit(source, target string) error {
+func Gzipit(source, target string) error {
 	reader, err := os.Open(source)
 	if err != nil {
 		return err
@@ -249,7 +258,7 @@ func gzipit(source, target string) error {
 	return err
 }
 
-func ungzip(source, target string) error {
+func Ungzip(source, target string) error {
 	reader, err := os.Open(source)
 	if err != nil {
 		return err

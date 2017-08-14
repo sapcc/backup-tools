@@ -1,4 +1,4 @@
-package main
+package swiftcli // import "github.com/sapcc/containers/backup-tools/go-src/swiftcli"
 
 import (
 	"bufio"
@@ -12,7 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sapcc/containers/backup-tools/backup-restore/configuration"
+	"github.com/sapcc/containers/backup-tools/go-src/configuration"
+	"github.com/sapcc/containers/backup-tools/go-src/utils"
 
 	"github.com/ncw/swift"
 )
@@ -92,7 +93,7 @@ func SwiftDownloadFile(clientSwift *swift.Connection, file string) (string, erro
 
 	fmt.Println("Download File: " + file)
 
-	mypath := filepath.Join(backupPath, path.Base(file))
+	mypath := filepath.Join(utils.BackupPath, path.Base(file))
 	outFile, err := os.Create(mypath)
 	if err != nil {
 		return "", err
@@ -138,14 +139,14 @@ func UnpackFiles(files []string) error {
 	for _, file := range files {
 		if strings.HasSuffix(file, ".tar.gz") {
 
-			err := ungzip(file, backupPath)
+			err := utils.Ungzip(file, utils.BackupPath)
 			if err != nil {
-				log.Println("ungzip", file, backupPath)
+				log.Println("ungzip", file, utils.BackupPath)
 				log.Fatal(err)
 			}
-			err = untarSplit(strings.TrimSuffix(file, ".gz"), backupPath)
+			err = utils.UntarSplit(strings.TrimSuffix(file, ".gz"), utils.BackupPath)
 			if err != nil {
-				log.Println("untarSplit", strings.TrimSuffix(file, ".gz"), backupPath)
+				log.Println("untarSplit", strings.TrimSuffix(file, ".gz"), utils.BackupPath)
 				log.Fatal(err)
 			}
 			defer os.Remove(file)
@@ -153,9 +154,9 @@ func UnpackFiles(files []string) error {
 
 		} else if strings.HasSuffix(file, ".gz") {
 
-			err := ungzip(file, backupPath)
+			err := utils.Ungzip(file, utils.BackupPath)
 			if err != nil {
-				log.Println(file, backupPath)
+				log.Println(file, utils.BackupPath)
 				log.Fatal(err)
 			}
 			defer os.Remove(file)

@@ -1,4 +1,4 @@
-package internal
+package underscore // import "github.com/sapcc/containers/backup-tools/go-src/underscore"
 
 func isUpper(c byte) bool {
 	return c >= 'A' && c <= 'Z'
@@ -60,6 +60,7 @@ func isUpperString(s string) bool {
 	return true
 }
 
+// ToExported rename Text to Exported Format
 func ToExported(s string) string {
 	if len(s) == 0 {
 		return s
