@@ -4,9 +4,6 @@ MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.t
 
 ADD files/backup-etcd.tar /
 
-RUN mkdir /backup \
-	&& chmod +x /backup-etcd
-
 VOLUME ["/backup"]
 
-CMD ["/backup-etcd"]
+ENTRYPOINT ["/backup-etcd"]

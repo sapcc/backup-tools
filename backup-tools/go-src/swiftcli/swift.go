@@ -2,10 +2,13 @@ package swiftcli // import "github.com/sapcc/containers/backup-tools/go-src/swif
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -87,13 +90,16 @@ func SwiftListPrefixFiles(clientSwift *swift.Connection, prefix string) ([]strin
 }
 
 // SwiftDownloadFile swift download this file from container
-func SwiftDownloadFile(clientSwift *swift.Connection, file string) (string, error) {
+func SwiftDownloadFile(clientSwift *swift.Connection, file string, backupDir *string) (string, error) {
 	var w io.Writer
 	var bw *bufio.Writer
+	if backupDir == nil {
+		*backupDir = utils.BackupPath
+	}
 
 	fmt.Println("Download File: " + file)
 
-	mypath := filepath.Join(utils.BackupPath, path.Base(file))
+	mypath := filepath.Join(*backupDir, path.Base(file))
 	outFile, err := os.Create(mypath)
 	if err != nil {
 		return "", err
@@ -108,7 +114,7 @@ func SwiftDownloadFile(clientSwift *swift.Connection, file string) (string, erro
 }
 
 //SwiftDownloadPrefix swift download all files from container that start with this prefix
-func SwiftDownloadPrefix(clientSwift *swift.Connection, prefix string) ([]string, error) {
+func SwiftDownloadPrefix(clientSwift *swift.Connection, prefix string, backupDir *string) ([]string, error) {
 	list, err := SwiftListPrefixFiles(clientSwift, prefix)
 	if err != nil {
 		return nil, err
@@ -125,7 +131,101 @@ func SwiftDownloadPrefix(clientSwift *swift.Connection, prefix string) ([]string
 		if strings.HasPrefix(str, "mysql.") {
 			continue
 		}
-		file, err := SwiftDownloadFile(clientSwift, str)
+		file, err := SwiftDownloadFile(clientSwift, str, backupDir)
+		if err != nil {
+			return nil, err
+		}
+		objects = append(objects, file)
+	}
+	return objects, nil
+}
+
+// SwiftUploadFile swift upload a file to the container
+func SwiftUploadFile(clientSwift *swift.Connection, file string, expireAfter *int64, fakeObjectName *string) (done bool, err error) {
+	var realPathFile string
+
+	realPathFile, err = filepath.Abs(file)
+	if err != nil {
+		return false, err
+	}
+
+	contentType, md5hash, fileSize, err := GetMimeTypeAndMd5AndSize(realPathFile)
+	if err != nil {
+		return false, err
+	}
+
+	headers := swift.Headers{}
+
+	// Now set content size correctly
+	headers["Content-Length"] = strconv.FormatInt(fileSize, 10)
+	if expireAfter != nil {
+		headers["X-Delete-After"] = strconv.FormatInt(*expireAfter, 10)
+	}
+
+	fileOS, err := os.Open(realPathFile)
+	if err != nil {
+		return false, err
+	}
+	defer fileOS.Close()
+	contents := bufio.NewReader(fileOS)
+
+	if fakeObjectName != nil {
+		realPathFile = *fakeObjectName
+	}
+
+	pathSlice := []string{configuration.DefaultConfiguration.ContainerPrefix}
+	pathSlice = append(pathSlice, realPathFile)
+	objectName := strings.Join(pathSlice, string(os.PathListSeparator))
+
+	h, err := clientSwift.ObjectPut(configuration.ContainerName, objectName, contents, true, md5hash, contentType, headers)
+	if err != nil {
+		return false, err
+	}
+
+	if h["Etag"] != md5hash {
+		err = fmt.Errorf("Bad Etag want %q got %q", md5hash, h["Etag"])
+		return false, err
+	}
+
+	// Fetch object info and compare
+	info, _, err := clientSwift.Object(configuration.ContainerName, objectName)
+	if err != nil {
+		return false, err
+	}
+	if info.ContentType != "text/plain" {
+		err = fmt.Errorf("Bad ContentType want %q got %q", contentType, info.ContentType)
+		return false, err
+	}
+	if info.Bytes != fileSize {
+		err = fmt.Errorf("Bad file size want %q got %q", fileSize, info.Bytes)
+		return false, err
+	}
+	if info.Hash != md5hash {
+		err = fmt.Errorf("Bad hash want %q got %q", md5hash, info.Hash)
+		return false, err
+	}
+	return true, nil
+}
+
+//SwiftUploadPrefix swift upload all files from system that start with this prefix
+func SwiftUploadPrefix(clientSwift *swift.Connection, prefix string) ([]string, error) {
+	list, err := SwiftListPrefixFiles(clientSwift, prefix)
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, errors.New("Prefix List empty")
+	}
+
+	// list of localfiles
+	objects := make([]string, 0)
+
+	// TODO: upload files via SwiftUploadFile and add file to objects
+	for _, str := range list {
+		if strings.HasPrefix(str, "mysql.") {
+			continue
+		}
+		file, err := SwiftDownloadFile(clientSwift, str, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -165,4 +265,55 @@ func UnpackFiles(files []string) error {
 
 	}
 	return nil
+}
+
+//GetMimeTypeAndMd5AndSize returns the content type, md5 hash, size and error if an error is available...
+func GetMimeTypeAndMd5AndSize(filePath string) (contentType string, md5Hash string, size int64, err error) {
+	contentType = "application/octet-stream"
+	path, err := filepath.Abs(filePath)
+	if err != nil {
+		return contentType, "", -1, err
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return contentType, "", -1, err
+	}
+	defer file.Close()
+
+	fileStat, err := file.Stat()
+	if err != nil {
+		return contentType, "", -1, err
+	}
+	size = fileStat.Size()
+
+	// Only the first 512 bytes are used to sniff the content type.
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil {
+		return contentType, "", size, err
+	}
+
+	// Reset the read pointer if necessary.
+	file.Seek(0, 0)
+
+	// Always returns a valid content-type and "application/octet-stream" if no others seemed to match.
+	contentType = http.DetectContentType(buffer)
+
+	//Open a new hash interface to write to
+	hash := md5.New()
+
+	//Copy the file in the hash interface and check for any error
+	if _, err := io.Copy(hash, file); err != nil {
+		return contentType, "", size, err
+	}
+
+	//Get the 16 bytes hash
+	hashInBytes := hash.Sum(nil)[:16]
+
+	//Convert the bytes to a string
+	returnMD5String := hex.EncodeToString(hashInBytes)
+
+	return contentType, returnMD5String, size, nil
+
 }

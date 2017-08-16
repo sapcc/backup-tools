@@ -23,15 +23,16 @@ import (
 
 var (
 	clientSwift *swift.Connection
+	backupPath  = utils.NewBackupPath
 )
 
 func appQuit() error {
 
-	fmt.Println("Clearing " + utils.BackupPath + " ...")
+	fmt.Println("Clearing " + backupPath + " ...")
 
-	_ = os.RemoveAll(utils.BackupPath)
+	_ = os.RemoveAll(backupPath)
 
-	fmt.Println("Clearing " + utils.BackupPath + " done!")
+	fmt.Println("Clearing " + backupPath + " done!")
 
 	fmt.Println("You have request the Exit - Good Bye!")
 
@@ -170,7 +171,7 @@ func startRestoreInit(cc bool) error {
 		configuration.ContainerPrefix,
 	)
 
-	os.Mkdir(utils.BackupPath, 0777)
+	os.Mkdir(backupPath, 0777)
 	/*
 	   fmt.Println("Original : ", intSlice[:])
 	   sort.Ints(intSlice)
@@ -266,6 +267,7 @@ func appQuest1(full bool) error {
 // download backup
 func appQuest2(index int) error {
 	var err error
+	var backupPath = backupPath
 	// normalize index
 	index = index - 1
 
@@ -273,17 +275,17 @@ func appQuest2(index int) error {
 
 	fmt.Println("Download: " + utils.List2[index])
 
-	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"))
+	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"), &backupPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// change workingdir to  /newbackup
-	if err = os.Chdir(utils.BackupPath); err != nil {
+	if err = os.Chdir(backupPath); err != nil {
 		log.Fatal(err)
 	}
 
-	files, _ := ioutil.ReadDir(utils.BackupPath)
+	files, _ := ioutil.ReadDir(backupPath)
 	objects := make([]string, 0)
 	for _, file := range files {
 		objects = append(objects, file.Name())
@@ -298,14 +300,14 @@ func appQuest2(index int) error {
 
 // download backup
 func appQuestManual() error {
-	fmt.Println("Backup Manual from " + utils.BackupPath)
+	fmt.Println("Backup Manual from " + backupPath)
 
 	// change workingdir to  /newbackup
-	if err := os.Chdir(utils.BackupPath); err != nil {
+	if err := os.Chdir(backupPath); err != nil {
 		log.Fatal(err)
 	}
 
-	files, _ := ioutil.ReadDir(utils.BackupPath)
+	files, _ := ioutil.ReadDir(backupPath)
 	objects := make([]string, 0)
 	for _, file := range files {
 		objects = append(objects, file.Name())
@@ -320,7 +322,7 @@ func appQuestManual() error {
 
 func appProcessRestore() error {
 
-	files, _ := ioutil.ReadDir(utils.BackupPath)
+	files, _ := ioutil.ReadDir(backupPath)
 	for _, f := range files {
 		if f.Name() == "." || f.Name() == ".." {
 			continue
@@ -345,11 +347,11 @@ func appProcessRestore() error {
 
 func appMysqlDB(table string) error {
 
-	//log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + utils.BackupPath + "/" + table + ".sql")
-	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + utils.BackupPath + "/" + table + ".sql")
+	//log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
 
-	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + utils.BackupPath + "/" + table + ".sql")
-	_ = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + utils.BackupPath + "/" + table + ".sql")
+	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
+	_ = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
 
 	fmt.Println(">> database restore done: " + table)
 	return nil
@@ -357,9 +359,9 @@ func appMysqlDB(table string) error {
 
 func appPgsqlDB(table string) error {
 
-	log.Println("psql -U postgres -h localhost -d " + table + " -f " + utils.BackupPath + "/" + table + ".sql")
+	log.Println("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
 
-	_ = utils.ExeCmd("psql -U postgres -h localhost -d " + table + " -f " + utils.BackupPath + "/" + table + ".sql")
+	_ = utils.ExeCmd("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
 
 	fmt.Println(">> database restore done: " + table)
 	return nil

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -10,8 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ncw/swift"
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
 	"github.com/sapcc/containers/backup-tools/go-src/prometheus"
+	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
+	"github.com/sapcc/containers/backup-tools/go-src/utils"
 	"github.com/urfave/cli"
 )
 
@@ -20,30 +24,38 @@ const (
 	layoutTimestamp       = "2006-01-02 15:04:05"
 	layoutTimestampBackup = "2006-01-02_1504"
 	tmpTimestampFile      = "/tmp/last_backup_timestamp"
+	etcdDir               = "/var/lib/etcd2"
+	tmpDir                = "/tmp"
+	cmd                   = "/etcdctl"
 )
 
 var (
-	etcdBackupDir string
-	cmd           = "/etcdctl"
-	cmdArgsTemp   = []string{"backup"}
-	cfg           *configuration.EnvironmentStruct
-	t             []byte
+	backupDir      = utils.BackupPath
+	etcdBackupDir  string
+	etcdBackupDir2 string
+	cmdArgsTemp    = []string{"backup"}
+	cfg            *configuration.EnvironmentStruct
+	t              []byte
+	swiftCliConn   *swift.Connection
 )
 
 func init() {
 	var err error
 	var stats os.FileInfo
 
-	cfg = new(configuration.EnvironmentStruct)
+	log.SetOutput(os.Stderr)
+	log.SetPrefix("[backup-etcd]")
 
-	if stats, err = os.Stat("/tmp"); err != nil {
+	cfg = configuration.DefaultConfiguration
+
+	if stats, err = os.Stat(tmpDir); err != nil {
 		if os.IsNotExist(err) {
 			// file does not exist
-			os.MkdirAll("/tmp", 0777)
+			os.MkdirAll(tmpDir, 0777)
 		}
 	}
 	if err == nil && stats.IsDir() && stats.Mode() != 0777 {
-		os.Chmod("/tmp", 0777)
+		os.Chmod(tmpDir, 0777)
 	}
 }
 
@@ -70,7 +82,22 @@ func runServer(c *cli.Context) {
 	var err error
 	bp := prometheus.NewBackup()
 
-	files, _ := ioutil.ReadDir("/var/lib/etcd2")
+	swiftCliConn = swiftcli.SwiftConnection(
+		cfg.OsAuthVersion,
+		cfg.OsAuthURL,
+		cfg.OsUsername,
+		cfg.OsPassword,
+		cfg.OsUserDomainName,
+		cfg.OsProjectName,
+		cfg.OsProjectDomainName,
+		cfg.OsRegionName,
+		cfg.ContainerPrefix)
+
+	if _, err = os.Stat(tmpTimestampFile); os.IsNotExist(err) {
+		swiftcli.SwiftDownloadFile(swiftCliConn, tmpTimestampFile, &backupDir)
+	}
+
+	files, _ := ioutil.ReadDir(etcdDir)
 	for _, f := range files {
 		if !f.IsDir() {
 			continue
@@ -78,17 +105,18 @@ func runServer(c *cli.Context) {
 		if !strings.HasPrefix(f.Name(), "master") {
 			continue
 		}
-		etcdBackupDir = strings.Join([]string{"/var/lib/etcd2", f.Name()}, string(os.PathSeparator))
+		etcdBackupDir = strings.Join([]string{etcdDir, f.Name()}, string(os.PathSeparator))
+		break
 	}
 
-	cmdArgsTemp = append(cmdArgsTemp, "--data-dir="+strconv.Quote("/var/lib/etcd2/"+etcdBackupDir))
-
-	os.MkdirAll("/backup/"+etcdBackupDir, 0777)
+	cmdArgsTemp = append(cmdArgsTemp, "--data-dir="+strconv.Quote(etcdBackupDir))
+	etcdBackupDir2 = strings.Join([]string{backupDir, etcdBackupDir}, string(os.PathSeparator))
+	os.MkdirAll(etcdBackupDir2, 0777)
 
 	go func() {
 		for {
 			tsBackup := time.Now().UTC()
-			cmdArgs := append(cmdArgsTemp, "--backup-dir="+strconv.Quote(strings.Join([]string{"/backup", etcdBackupDir, tsBackup.Format(layoutTimestampBackup)}, string(os.PathSeparator))))
+			cmdArgs := append(cmdArgsTemp, "--backup-dir="+strconv.Quote(strings.Join([]string{backupDir, etcdBackupDir, tsBackup.Format(layoutTimestampBackup)}, string(os.PathSeparator))))
 
 			command := exec.Command(cmd, cmdArgs...)
 			command.Stdout = os.Stdout
@@ -110,8 +138,11 @@ func runServer(c *cli.Context) {
 				fmt.Fprintln(os.Stderr, err)
 				bp.SetError()
 			} else {
-				bp.SetSuccess(&timestamp)
-				ioutil.WriteFile(tmpTimestampFile, []byte(tsBackup.Format(layoutTimestamp)), 0777)
+				if err := ioutil.WriteFile(tmpTimestampFile, []byte(tsBackup.Format(layoutTimestamp)), 0777); err != nil {
+					log.Println(err)
+				} else {
+					bp.SetSuccess(&timestamp)
+				}
 			}
 			bp.Finish()
 			time.Sleep(300 * time.Second)

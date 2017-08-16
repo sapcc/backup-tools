@@ -1,7 +1,7 @@
 SHELL       := /bin/sh
-REGISTRY    ?=
+REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/backup-etcd
-VERSION     ?= v0.1.2
+VERSION     ?= v0.0.1
 
 ### Proxy Foo
 ifneq ($(http_proxy),)
@@ -15,10 +15,15 @@ endif
 
 .PHONY: build
 build:
-	docker build $(BUILD_ARGS) -t go-build:latest --rm ../backup-etcd
-	docker run go-build tar -cvf - /backup-etcd > files/backup-etcd.tar
-	docker build $(BUILD_ARGS) -t $(REGISTRY)/$(IMAGE):$(VERSION) --rm .
+	tar -cvf go-src/files/go-src.tar --exclude ".git" --exclude ".cache/" --exclude "*.tar" -C ~/go/ .
+	docker build $(BUILD_ARGS) --squash -t go-build:latest --rm ./go-src
+	test -f go-src/files/go-src.tar && rm go-src/files/go-src.tar
+	docker run --rm go-build tar -cvf - /backup-etcd > files/backup-etcd.tar
+	docker rmi go-build:latest
+	docker build $(BUILD_ARGS) --squash -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
+	test -f files/backup-etcd.tar && rm files/backup-etcd.tar
+	docker system prune -f
 
 .PHONY: push
 push:
-	docker push $(REGISTRY)/$(IMAGE):$(VERSION)
+	docker push $(REGISTRY)$(IMAGE):$(VERSION)

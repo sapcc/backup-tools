@@ -19,7 +19,9 @@ import (
 
 const (
 	// BackupPath global const
-	BackupPath = "/newbackup"
+	BackupPath = "/backup"
+	// NewBackupPath global const
+	NewBackupPath = "/newbackup"
 )
 
 var (
