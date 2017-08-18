@@ -55,8 +55,12 @@ type EnvironmentStruct struct {
 }
 
 func init() {
+	backupRegionName := os.Getenv("BACKUP_REGION_NAME")
+	if len(backupRegionName) == 0 {
+		backupRegionName = os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName")))
+	}
 	DefaultConfiguration = &EnvironmentStruct{
-		ContainerPrefix:      strings.Join([]string{os.Getenv("BACKUP_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/"),
+		ContainerPrefix:      strings.Join([]string{backupRegionName, os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/"),
 		OsAuthURL:            os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthURL"))),
 		OsAuthVersion:        os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthVersion"))),
 		OsIdentityAPIVersion: os.Getenv(strings.ToUpper(underscore.Underscore("OsIdentityAPIVersion"))),

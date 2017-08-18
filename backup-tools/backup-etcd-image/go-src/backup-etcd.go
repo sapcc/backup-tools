@@ -7,43 +7,65 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mholt/archiver"
 	"github.com/ncw/swift"
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
 	"github.com/sapcc/containers/backup-tools/go-src/prometheus"
 	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
 	"github.com/sapcc/containers/backup-tools/go-src/utils"
 	"github.com/urfave/cli"
+	"path"
+	"strconv"
 )
 
 const (
 	appName               = "ETCD Backup"
-	layoutTimestamp       = "2006-01-02 15:04:05"
+	layoutTimestamp       = "200601021504"
 	layoutTimestampBackup = "2006-01-02_1504"
 	tmpTimestampFile      = "/tmp/last_backup_timestamp"
 	etcdDir               = "/var/lib/etcd2"
-	tmpDir                = "/tmp"
 	cmd                   = "/etcdctl"
 )
 
 var (
-	backupDir      = utils.BackupPath
-	etcdBackupDir  string
-	etcdBackupDir2 string
-	cmdArgsTemp    = []string{"backup"}
-	cfg            *configuration.EnvironmentStruct
-	t              []byte
-	swiftCliConn   *swift.Connection
+	backupExpire      int64
+	backupExpireTmp   int
+	backupInterval    time.Duration
+	backupIntervalTmp int
+	tmpDir            = "/tmp"
+	backupDir         = utils.BackupPath
+	etcdBackupDir     string
+	etcdBackupDir2    string
+	cmdArgsTemp       = []string{"backup"}
+	cfg               *configuration.EnvironmentStruct
+	t                 []byte
+	swiftCliConn      *swift.Connection
 )
 
 func init() {
 	var err error
 	var stats os.FileInfo
 
-	log.SetOutput(os.Stderr)
+	exe3 := os.Getenv("BACKUP_EXPIRATION_AFTER")
+
+	backupExpireTmp, err = strconv.Atoi(exe3)
+	if err != nil {
+		backupExpire = 864000
+	} else {
+		backupExpire = int64(backupExpireTmp)
+	}
+
+	exe3 = os.Getenv("BACKUP_INTERVAL")
+	backupIntervalTmp, err = strconv.Atoi(exe3)
+	if err != nil {
+		backupIntervalTmp = 864000
+	}
+	backupInterval = time.Duration(backupIntervalTmp) * time.Second
+
+	log.SetOutput(os.Stdout)
 	log.SetPrefix("[backup-etcd]")
 
 	cfg = configuration.DefaultConfiguration
@@ -94,7 +116,7 @@ func runServer(c *cli.Context) {
 		cfg.ContainerPrefix)
 
 	if _, err = os.Stat(tmpTimestampFile); os.IsNotExist(err) {
-		swiftcli.SwiftDownloadFile(swiftCliConn, tmpTimestampFile, &backupDir)
+		swiftcli.SwiftDownloadFile(swiftCliConn, tmpTimestampFile, &tmpDir)
 	}
 
 	files, _ := ioutil.ReadDir(etcdDir)
@@ -109,23 +131,24 @@ func runServer(c *cli.Context) {
 		break
 	}
 
-	cmdArgsTemp = append(cmdArgsTemp, "--data-dir="+strconv.Quote(etcdBackupDir))
-	etcdBackupDir2 = strings.Join([]string{backupDir, etcdBackupDir}, string(os.PathSeparator))
-	os.MkdirAll(etcdBackupDir2, 0777)
+	cmdArgsTemp = append(cmdArgsTemp, "--data-dir="+etcdBackupDir)
 
 	go func() {
 		for {
 			tsBackup := time.Now().UTC()
-			cmdArgs := append(cmdArgsTemp, "--backup-dir="+strconv.Quote(strings.Join([]string{backupDir, etcdBackupDir, tsBackup.Format(layoutTimestampBackup)}, string(os.PathSeparator))))
+			backupDataDir := strings.Join([]string{backupDir, tsBackup.Format(layoutTimestampBackup)}, string(os.PathSeparator))
+			log.Println("backupDataDir:", backupDataDir)
+			cmdArgs := append(cmdArgsTemp, "--backup-dir="+backupDataDir)
 
 			command := exec.Command(cmd, cmdArgs...)
 			command.Stdout = os.Stdout
-			command.Stderr = os.Stderr
+			command.Stderr = os.Stdout
 			bp.Beginn()
 
 			t, err = ioutil.ReadFile(tmpTimestampFile)
 			if err != nil {
-				fmt.Print(err)
+
+				log.Println("Read TimestampFile error:", err)
 			} else {
 				t = []byte("200001010101")
 			}
@@ -135,17 +158,37 @@ func runServer(c *cli.Context) {
 			timestamp, _ := time.Parse(layoutTimestamp, ts)
 
 			if err := command.Run(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				log.Println("Command error:", err)
 				bp.SetError()
 			} else {
 				if err := ioutil.WriteFile(tmpTimestampFile, []byte(tsBackup.Format(layoutTimestamp)), 0777); err != nil {
-					log.Println(err)
+					log.Println("TimestampFile error:", err)
 				} else {
-					bp.SetSuccess(&timestamp)
+					fakeObjectName := path.Clean(strings.Join([]string{cfg.ContainerPrefix, tmpTimestampFile}, string(os.PathSeparator)))
+					log.Println("fakeObjectName:", fakeObjectName)
+					done1, err := swiftcli.SwiftUploadFile(swiftCliConn, tmpTimestampFile, nil, &fakeObjectName)
+					if err != nil {
+						log.Println("SwiftUploadFile tmp:", err)
+					}
+					if err := archiver.TarGz.Make(backupDataDir+".tgz", []string{backupDataDir}); err != nil {
+						log.Println("archiver.TarGz:", err)
+					}
+					fakeObjectName = path.Clean(strings.Join([]string{cfg.ContainerPrefix, backupDataDir + ".tgz"}, string(os.PathSeparator)))
+					log.Println("fakeObjectName:", fakeObjectName)
+					done2, err := swiftcli.SwiftUploadFile(swiftCliConn, backupDataDir+".tgz", &backupExpire, &fakeObjectName)
+					if err != nil {
+						log.Println("SwiftUploadFile backup:", err)
+					}
+					if done1 && done2 {
+						log.Println("Backup successful")
+						bp.SetSuccess(&timestamp)
+					}
+					os.Remove(backupDataDir + ".tgz")
+					os.RemoveAll(backupDataDir)
 				}
 			}
 			bp.Finish()
-			time.Sleep(300 * time.Second)
+			time.Sleep(backupInterval)
 		}
 	}()
 

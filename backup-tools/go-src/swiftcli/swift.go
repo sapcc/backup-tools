@@ -173,9 +173,13 @@ func SwiftUploadFile(clientSwift *swift.Connection, file string, expireAfter *in
 		realPathFile = *fakeObjectName
 	}
 
+	if strings.HasPrefix(realPathFile, configuration.DefaultConfiguration.ContainerPrefix) {
+		realPathFile = strings.TrimPrefix(realPathFile, configuration.DefaultConfiguration.ContainerPrefix)
+	}
+
 	pathSlice := []string{configuration.DefaultConfiguration.ContainerPrefix}
 	pathSlice = append(pathSlice, realPathFile)
-	objectName := strings.Join(pathSlice, string(os.PathListSeparator))
+	objectName := path.Clean(strings.Join(pathSlice, string(os.PathSeparator)))
 
 	h, err := clientSwift.ObjectPut(configuration.ContainerName, objectName, contents, true, md5hash, contentType, headers)
 	if err != nil {
@@ -192,7 +196,7 @@ func SwiftUploadFile(clientSwift *swift.Connection, file string, expireAfter *in
 	if err != nil {
 		return false, err
 	}
-	if info.ContentType != "text/plain" {
+	if info.ContentType != contentType {
 		err = fmt.Errorf("Bad ContentType want %q got %q", contentType, info.ContentType)
 		return false, err
 	}

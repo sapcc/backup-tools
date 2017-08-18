@@ -2,6 +2,7 @@ SHELL       := /bin/sh
 REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/backup-etcd
 VERSION     ?= v0.0.1
+DOCKERFILE  ?= Dockerfile
 
 ### Proxy Foo
 ifneq ($(http_proxy),)
@@ -19,8 +20,9 @@ build:
 	docker build $(BUILD_ARGS) --squash -t go-build:latest --rm ./go-src
 	test -f go-src/files/go-src.tar && rm go-src/files/go-src.tar
 	docker run --rm go-build tar -cvf - /backup-etcd > files/backup-etcd.tar
+	docker run --rm go-build tar -cvf - /etc/ssl/certs > files/backup-certs.tar
 	docker rmi go-build:latest
-	docker build $(BUILD_ARGS) --squash -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
+	docker build $(BUILD_ARGS) --squash -f $(DOCKERFILE) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
 	test -f files/backup-etcd.tar && rm files/backup-etcd.tar
 	docker system prune -f
 
