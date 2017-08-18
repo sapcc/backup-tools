@@ -32,13 +32,13 @@ cd /backup/tmp
 echo $$ > $PIDFILE
 
 source /backup/env/from.env
-swift list db_backup --prefix "$REPLICATE_FROM" > /backup/tmp/from.log
+swift list db_backup --prefix "$REPLICATE_FROM" | grep -v "/base$" > /backup/tmp/from.log
 
 for i in /backup/env/to*.env ; do
   source $i
   REPLICATE_TO="$OS_REGION_NAME"
 
-  swift list db_backup --prefix "$REPLICATE_FROM" > /backup/tmp/to.log
+  swift list db_backup --prefix "$REPLICATE_FROM" | grep -v "/base$" > /backup/tmp/to.log
 
   REPL_OBJECTS="`comm --nocheck-order -23 /backup/tmp/from.log /backup/tmp/to.log`"
 
