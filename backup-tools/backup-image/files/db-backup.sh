@@ -18,7 +18,8 @@ LAST_BACKUP_FILE="/tmp/last_backup_timestamp"
 PIDFILE="/var/run/db-backup.pid"
 
 echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading last backup timestamp from $SWIFT_CONTAINER/ ..."
-swift download -o $LAST_BACKUP_FILE db_backup $OS_REGION_NAME/$MY_POD_NAMESPACE/$MY_POD_NAME$LAST_BACKUP_FILE$LAST_BACKUP_FILE
+#swift download -o $LAST_BACKUP_FILE db_backup $OS_REGION_NAME/$MY_POD_NAMESPACE/$MY_POD_NAME$LAST_BACKUP_FILE$LAST_BACKUP_FILE
+swift download -o $LAST_BACKUP_FILE db_backup $SWIFT_PREFIX$LAST_BACKUP_FILE$LAST_BACKUP_FILE
 
 if [ -f "$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat $LAST_BACKUP_FILE)"
@@ -66,7 +67,8 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
       fi
     done
 
-    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    #swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    swift upload "$SWIFT_CONTAINER" "$SWIFT_PREFIX$LAST_BACKUP_FILE$LAST_BACKUP_FILE"
   fi
 fi
 
@@ -97,7 +99,8 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
       fi
     done
 
-    swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    #swift upload $SWIFT_CONTAINER$LAST_BACKUP_FILE $LAST_BACKUP_FILE
+    swift upload "$SWIFT_CONTAINER" "$SWIFT_PREFIX$LAST_BACKUP_FILE$LAST_BACKUP_FILE"
   fi
 fi
 
