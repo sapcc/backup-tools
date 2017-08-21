@@ -14,14 +14,14 @@ PGSQL_PORT=5432
 PGSQL_SOCKET=/db/socket/.s.PGSQL.$PGSQL_PORT
 
 CUR_TS="$(date +%Y%m%d%H%M)"
-LAST_BACKUP_FILE="/tmp/last_backup_timestamp"
+LAST_BACKUP_FILE="last_backup_timestamp"
 PIDFILE="/var/run/db-backup.pid"
 
 echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading last backup timestamp from $SWIFT_CONTAINER/ ..."
-swift download -o $LAST_BACKUP_FILE db_backup $SWIFT_PREFIX$LAST_BACKUP_FILE$LAST_BACKUP_FILE
+swift download -o $LAST_BACKUP_FILE db_backup $SWIFT_PREFIX/$LAST_BACKUP_FILE
 
-if [ -f "$LAST_BACKUP_FILE" ] ; then
-  LAST_BACKUP_TS="$(cat $LAST_BACKUP_FILE)"
+if [ -f "/tmp/$LAST_BACKUP_FILE" ] ; then
+  LAST_BACKUP_TS="$(cat /tmp/$LAST_BACKUP_FILE)"
 else
   LAST_BACKUP_TS=0
 fi
@@ -52,7 +52,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] || [ "$IS_NEXT_TS_INCR" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
-    echo "$CUR_TS" > $LAST_BACKUP_FILE
+    echo "$CUR_TS" > /tmp/$LAST_BACKUP_FILE
 
     # MySQL Backup (full)
     #xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
@@ -66,7 +66,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
       fi
     done
 
-    swift upload --object-name "$SWIFT_PREFIX$LAST_BACKUP_FILE$LAST_BACKUP_FILE" "$SWIFT_CONTAINER" "$LAST_BACKUP_FILE"
+    swift upload --object-name "$SWIFT_PREFIX/$LAST_BACKUP_FILE" "$SWIFT_CONTAINER" "/tmp/$LAST_BACKUP_FILE"
   fi
 fi
 
@@ -97,7 +97,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
       fi
     done
 
-    swift upload --object-name "$SWIFT_PREFIX$LAST_BACKUP_FILE$LAST_BACKUP_FILE" "$SWIFT_CONTAINER" "$LAST_BACKUP_FILE"
+    swift upload --object-name "$SWIFT_PREFIX/$LAST_BACKUP_FILE" "$SWIFT_CONTAINER" "/tmp/$LAST_BACKUP_FILE"
   fi
 fi
 
