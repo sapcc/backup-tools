@@ -18,7 +18,7 @@ LAST_BACKUP_FILE="last_backup_timestamp"
 PIDFILE="/var/run/db-backup.pid"
 
 echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading last backup timestamp from $SWIFT_CONTAINER/ ..."
-swift download -o $LAST_BACKUP_FILE db_backup $SWIFT_PREFIX/$LAST_BACKUP_FILE
+swift download -o /tmp/$LAST_BACKUP_FILE db_backup $SWIFT_PREFIX/$LAST_BACKUP_FILE
 
 if [ -f "/tmp/$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat /tmp/$LAST_BACKUP_FILE)"
@@ -86,7 +86,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
-    echo "$CUR_TS" > $LAST_BACKUP_FILE
+    echo "$CUR_TS" > /tmp/$LAST_BACKUP_FILE
 
     for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
