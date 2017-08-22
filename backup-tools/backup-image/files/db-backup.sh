@@ -36,7 +36,7 @@ fi
 
 if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] ; then
   DATADIR=/db/data/
-  BACKUP_BASE=/backup/mysql/base/
+  BACKUP_BASE=/backup/mysql/base
   USERNAME=root
   PASSWORD=$MYSQL_ROOT_PASSWORD
 
