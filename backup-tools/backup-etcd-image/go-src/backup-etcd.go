@@ -30,6 +30,7 @@ const (
 	tmpTimestampFile      = "/tmp/last_backup_timestamp"
 	etcdDir               = "/var/lib/etcd2"
 	cmd                   = "/etcdctl"
+	interval              = time.Duration(60) * time.Second
 )
 
 var (
@@ -118,7 +119,10 @@ func runServer(c *cli.Context) {
 		cfg.ContainerPrefix)
 
 	if _, err = os.Stat(tmpTimestampFile); os.IsNotExist(err) {
-		swiftcli.SwiftDownloadFile(swiftCliConn, tmpTimestampFile, &tmpDir)
+		_, err = swiftcli.SwiftDownloadFile(swiftCliConn, cfg.ContainerPrefix+tmpTimestampFile, &tmpDir)
+		if err != nil {
+			log.Println("Download TimeStampFile:", err)
+		}
 	}
 
 	files, _ := ioutil.ReadDir(etcdDir)
@@ -139,7 +143,6 @@ func runServer(c *cli.Context) {
 		for {
 			tsBackup := time.Now().UTC()
 			backupDataDir := strings.Join([]string{backupDir, tsBackup.Format(layoutTimestampBackup)}, string(os.PathSeparator))
-			log.Println("backupDataDir:", backupDataDir)
 			cmdArgs := append(cmdArgsTemp, "--backup-dir="+backupDataDir)
 
 			command := exec.Command(cmd, cmdArgs...)
@@ -147,15 +150,30 @@ func runServer(c *cli.Context) {
 			command.Stderr = os.Stdout
 			bp.Beginn()
 
-			t, err = ioutil.ReadFile(tmpTimestampFile)
+			file, err := os.Open(tmpTimestampFile)
+			if err != nil {
+				log.Println("TimeStampFile Error:", err)
+			}
+
+			t, err := ioutil.ReadAll(file)
+			file.Close()
 			if err != nil {
 				t = []byte("200001010101")
 				log.Println("Read TimestampFile error:", err)
 			}
+
 			rx := regexp.MustCompile(`^([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$`)
 			ts := rx.ReplaceAllString(strings.Trim(string(t), "\n"), "$1-$2-$3 $4:$5:00")
 
 			timestamp, _ := time.Parse(layoutTimestamp2, ts)
+
+			bp.SetSuccess(&timestamp)
+
+			if timestamp.Add(backupInterval).After(time.Now()) {
+				goto GOSLEEP
+			}
+
+			log.Println("backupDataDir:", backupDataDir)
 
 			if err := command.Run(); err != nil {
 				log.Println("Command error:", err)
@@ -181,14 +199,15 @@ func runServer(c *cli.Context) {
 					}
 					if done1 && done2 {
 						log.Println("Backup successful")
-						bp.SetSuccess(&timestamp)
+						bp.SetSuccess(nil)
 					}
 					os.Remove(backupDataDir + ".tgz")
 					os.RemoveAll(backupDataDir)
 				}
 			}
+		GOSLEEP:
 			bp.Finish()
-			time.Sleep(backupInterval)
+			time.Sleep(interval)
 		}
 	}()
 
