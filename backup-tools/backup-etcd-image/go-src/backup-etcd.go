@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"path"
+	"strconv"
+
 	"github.com/mholt/archiver"
 	"github.com/ncw/swift"
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
@@ -17,13 +20,12 @@ import (
 	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
 	"github.com/sapcc/containers/backup-tools/go-src/utils"
 	"github.com/urfave/cli"
-	"path"
-	"strconv"
 )
 
 const (
 	appName               = "ETCD Backup"
 	layoutTimestamp       = "200601021504"
+	layoutTimestamp2      = "2006-01-02 15:04:05"
 	layoutTimestampBackup = "2006-01-02_1504"
 	tmpTimestampFile      = "/tmp/last_backup_timestamp"
 	etcdDir               = "/var/lib/etcd2"
@@ -147,15 +149,13 @@ func runServer(c *cli.Context) {
 
 			t, err = ioutil.ReadFile(tmpTimestampFile)
 			if err != nil {
-
-				log.Println("Read TimestampFile error:", err)
-			} else {
 				t = []byte("200001010101")
+				log.Println("Read TimestampFile error:", err)
 			}
 			rx := regexp.MustCompile(`^([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$`)
 			ts := rx.ReplaceAllString(strings.Trim(string(t), "\n"), "$1-$2-$3 $4:$5:00")
 
-			timestamp, _ := time.Parse(layoutTimestamp, ts)
+			timestamp, _ := time.Parse(layoutTimestamp2, ts)
 
 			if err := command.Run(); err != nil {
 				log.Println("Command error:", err)
