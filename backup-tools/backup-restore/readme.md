@@ -9,6 +9,10 @@ To restore a mysql/mariadb or postgres backup please run in your `backup` contai
 
 follow the instructions there. At any error the process will give back a fatal error and stop the process.
 
+### etcd backups!!
+
+This tool will not help you to restore a etcd backup. How to restore a etcd backup? Look at [etcd V2 Admin Guide](https://github.com/coreos/etcd/blob/master/Documentation/v2/admin_guide.md) 
+
 ### Cross-Region Backup-Restore
 Run this in the POD container `backup`.
 

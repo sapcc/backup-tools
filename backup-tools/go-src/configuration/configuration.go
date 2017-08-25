@@ -1,6 +1,11 @@
-package configuration // import "github.com/sapcc/containers/backup-tools/backup-restore/configuration"
+package configuration // import "github.com/sapcc/containers/backup-tools/go-src/configuration"
 
-import ()
+import (
+	"os"
+	"strings"
+
+	"github.com/sapcc/containers/backup-tools/go-src/underscore"
+)
 
 const (
 	// LongDateForm Date Format
@@ -10,6 +15,8 @@ const (
 )
 
 var (
+	// DefaultConfiguration variable automatic filled with ENV data
+	DefaultConfiguration *EnvironmentStruct
 	// ContainerPrefix variable for internal usage
 	ContainerPrefix string
 	// AuthVersion variable for internal usage
@@ -45,4 +52,23 @@ type EnvironmentStruct struct {
 	OsProjectDomainName  string `json:"opdn,omitempty"`
 	OsRegionName         string `json:"orn,omitempty"`
 	OsPassword           string `json:"op,omitempty"`
+}
+
+func init() {
+	backupRegionName := os.Getenv("BACKUP_REGION_NAME")
+	if len(backupRegionName) == 0 {
+		backupRegionName = os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName")))
+	}
+	DefaultConfiguration = &EnvironmentStruct{
+		ContainerPrefix:      strings.Join([]string{backupRegionName, os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/"),
+		OsAuthURL:            os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthURL"))),
+		OsAuthVersion:        os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthVersion"))),
+		OsIdentityAPIVersion: os.Getenv(strings.ToUpper(underscore.Underscore("OsIdentityAPIVersion"))),
+		OsUsername:           os.Getenv(strings.ToUpper(underscore.Underscore("OsUsername"))),
+		OsUserDomainName:     os.Getenv(strings.ToUpper(underscore.Underscore("OsUserDomainName"))),
+		OsProjectName:        os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectName"))),
+		OsProjectDomainName:  os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName"))),
+		OsRegionName:         os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName"))),
+		OsPassword:           os.Getenv(strings.ToUpper(underscore.Underscore("OsPassword"))),
+	}
 }

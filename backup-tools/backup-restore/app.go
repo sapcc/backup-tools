@@ -12,14 +12,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sapcc/containers/backup-tools/backup-restore/configuration"
-	"github.com/sapcc/containers/backup-tools/backup-restore/internal"
+	"github.com/sapcc/containers/backup-tools/go-src/configuration"
+	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
+	"github.com/sapcc/containers/backup-tools/go-src/underscore"
+	"github.com/sapcc/containers/backup-tools/go-src/utils"
 
 	"github.com/ncw/swift"
 	"gopkg.in/urfave/cli.v1"
 )
 
-var clientSwift *swift.Connection
+var (
+	clientSwift *swift.Connection
+	backupPath  = utils.NewBackupPath
+)
 
 func appQuit() error {
 
@@ -38,15 +43,15 @@ func startCrossregionInit() error {
 
 	group := configuration.EnvironmentStruct{
 		ContainerPrefix:      strings.Join([]string{os.Getenv("BACKUP_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/"),
-		OsAuthURL:            os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL"))),
-		OsAuthVersion:        os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion"))),
-		OsIdentityAPIVersion: os.Getenv(strings.ToUpper(internal.Underscore("OsIdentityAPIVersion"))),
-		OsUsername:           os.Getenv(strings.ToUpper(internal.Underscore("OsUsername"))),
-		OsUserDomainName:     os.Getenv(strings.ToUpper(internal.Underscore("OsUserDomainName"))),
-		OsProjectName:        os.Getenv(strings.ToUpper(internal.Underscore("OsProjectName"))),
-		OsProjectDomainName:  os.Getenv(strings.ToUpper(internal.Underscore("OsProjectDomainName"))),
-		OsRegionName:         os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName"))),
-		OsPassword:           os.Getenv(strings.ToUpper(internal.Underscore("OsPassword"))),
+		OsAuthURL:            os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthURL"))),
+		OsAuthVersion:        os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthVersion"))),
+		OsIdentityAPIVersion: os.Getenv(strings.ToUpper(underscore.Underscore("OsIdentityAPIVersion"))),
+		OsUsername:           os.Getenv(strings.ToUpper(underscore.Underscore("OsUsername"))),
+		OsUserDomainName:     os.Getenv(strings.ToUpper(underscore.Underscore("OsUserDomainName"))),
+		OsProjectName:        os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectName"))),
+		OsProjectDomainName:  os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName"))),
+		OsRegionName:         os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName"))),
+		OsPassword:           os.Getenv(strings.ToUpper(underscore.Underscore("OsPassword"))),
 	}
 
 	data, err := json.Marshal(group)
@@ -57,7 +62,7 @@ func startCrossregionInit() error {
 	str := b64.StdEncoding.WithPadding(-1).EncodeToString(data)
 	fmt.Println(str)
 
-	//fmt.Println(strings.ToUpper(internal.Underscore("OsAuthURL")))
+	//fmt.Println(strings.ToUpper(underscore.Underscore("OsAuthURL")))
 
 	return nil
 }
@@ -71,12 +76,12 @@ func startRestoreInit(cc bool) error {
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 	if os.Getenv("BACKUP_PGSQL_FULL") != "" {
-		backupType = "pgsql"
+		utils.BackupType = "pgsql"
 	} else if os.Getenv("BACKUP_MYSQL_FULL") != "" {
-		backupType = "mysql"
+		utils.BackupType = "mysql"
 	}
 
-	if backupType == "" {
+	if utils.BackupType == "" {
 		fmt.Println("\n\nNo System for the backup restore found.")
 		fmt.Println("\n\n******** * * EXIT NO SUPPORTED SYSTEM FOUND * * ********")
 		return cli.NewExitError("-- E: 1920291 --", 12)
@@ -106,55 +111,55 @@ func startRestoreInit(cc bool) error {
 		// fmt.Printf("%+v", jsonReturn)
 
 		if jsonReturn.ContainerPrefix != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("ContainerPrefix")), jsonReturn.ContainerPrefix)
+			os.Setenv(strings.ToUpper(underscore.Underscore("ContainerPrefix")), jsonReturn.ContainerPrefix)
 		}
 		if jsonReturn.OsAuthURL != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsAuthURL")), jsonReturn.OsAuthURL)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsAuthURL")), jsonReturn.OsAuthURL)
 		}
 		if jsonReturn.OsAuthVersion != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsAuthVersion")), jsonReturn.OsAuthVersion)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsAuthVersion")), jsonReturn.OsAuthVersion)
 		}
 		if jsonReturn.OsIdentityAPIVersion != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsIdentityAPIVersion")), jsonReturn.OsIdentityAPIVersion)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsIdentityAPIVersion")), jsonReturn.OsIdentityAPIVersion)
 		}
 		if jsonReturn.OsUsername != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsUsername")), jsonReturn.OsUsername)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsUsername")), jsonReturn.OsUsername)
 		}
 		if jsonReturn.OsUserDomainName != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsUserDomainName")), jsonReturn.OsUserDomainName)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsUserDomainName")), jsonReturn.OsUserDomainName)
 		}
 		if jsonReturn.OsProjectName != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsProjectName")), jsonReturn.OsProjectName)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsProjectName")), jsonReturn.OsProjectName)
 		}
 		if jsonReturn.OsProjectDomainName != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsProjectDomainName")), jsonReturn.OsProjectDomainName)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName")), jsonReturn.OsProjectDomainName)
 		}
 		if jsonReturn.OsRegionName != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsRegionName")), jsonReturn.OsRegionName)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsRegionName")), jsonReturn.OsRegionName)
 		}
 		if jsonReturn.OsPassword != "" {
-			os.Setenv(strings.ToUpper(internal.Underscore("OsPassword")), jsonReturn.OsPassword)
+			os.Setenv(strings.ToUpper(underscore.Underscore("OsPassword")), jsonReturn.OsPassword)
 		}
 
 	}
-	configuration.ContainerPrefix = os.Getenv(strings.ToUpper(internal.Underscore("ContainerPrefix")))
+	configuration.ContainerPrefix = os.Getenv(strings.ToUpper(underscore.Underscore("ContainerPrefix")))
 
 	if configuration.ContainerPrefix == "" {
-		configuration.ContainerPrefix = strings.Join([]string{os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName"))), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
-		os.Setenv(strings.ToUpper(internal.Underscore("ContainerPrefix")), configuration.ContainerPrefix)
+		configuration.ContainerPrefix = strings.Join([]string{os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName"))), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
+		os.Setenv(strings.ToUpper(underscore.Underscore("ContainerPrefix")), configuration.ContainerPrefix)
 	}
 
-	configuration.AuthVersion = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthVersion")))
-	configuration.AuthEndpoint = os.Getenv(strings.ToUpper(internal.Underscore("OsAuthURL")))
-	configuration.AuthUsername = os.Getenv(strings.ToUpper(internal.Underscore("OsUsername")))
-	configuration.AuthPassword = os.Getenv(strings.ToUpper(internal.Underscore("OsPassword")))
-	configuration.AuthUserDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsUserDomainName")))
-	configuration.AuthProjectName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectName")))
-	configuration.AuthProjectDomainName = os.Getenv(strings.ToUpper(internal.Underscore("OsProjectDomainName")))
-	configuration.AuthRegion = os.Getenv(strings.ToUpper(internal.Underscore("OsRegionName")))
-	configuration.MysqlRootPassword = os.Getenv(strings.ToUpper(internal.Underscore("MysqlRootPassword")))
+	configuration.AuthVersion = os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthVersion")))
+	configuration.AuthEndpoint = os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthURL")))
+	configuration.AuthUsername = os.Getenv(strings.ToUpper(underscore.Underscore("OsUsername")))
+	configuration.AuthPassword = os.Getenv(strings.ToUpper(underscore.Underscore("OsPassword")))
+	configuration.AuthUserDomainName = os.Getenv(strings.ToUpper(underscore.Underscore("OsUserDomainName")))
+	configuration.AuthProjectName = os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectName")))
+	configuration.AuthProjectDomainName = os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName")))
+	configuration.AuthRegion = os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName")))
+	configuration.MysqlRootPassword = os.Getenv(strings.ToUpper(underscore.Underscore("MysqlRootPassword")))
 
-	clientSwift = SwiftConnection(
+	clientSwift = swiftcli.SwiftConnection(
 		configuration.AuthVersion,
 		configuration.AuthEndpoint,
 		configuration.AuthUsername,
@@ -186,18 +191,18 @@ func startRestoreInit(cc bool) error {
 }
 
 func appQuest1(full bool) error {
-
-	list, err := SwiftListPrefixFiles(clientSwift, configuration.ContainerPrefix)
+	var err error
+	utils.List, err = swiftcli.SwiftListPrefixFiles(clientSwift, configuration.ContainerPrefix)
 
 	if err != nil {
 		return cli.NewExitError("-- E: 200.050 --", 12)
 	}
 
-	list2 = makePrefixPathOnly(deleteNoGzSuffix(deleteEmpty(list)))
+	utils.List2 = utils.MakePrefixPathOnly(utils.DeleteNoGzSuffix(utils.DeleteEmpty(utils.List)))
 
 	// Last 5 Backup List of backups
 	if !full {
-		length := len(list2)
+		length := len(utils.List2)
 		start := length - 5
 
 		if start < 0 {
@@ -208,16 +213,16 @@ func appQuest1(full bool) error {
 			start = length
 		}
 
-		list2 = list2[start:]
+		utils.List2 = utils.List2[start:]
 	}
 
-	for id, str := range list2 {
+	for id, str := range utils.List2 {
 		myStr := strings.Split(str, "/")
 		// fmt.Printf("%q\n", myStr)
 
 		if myStr[3] != "" {
 			t, _ := time.Parse(configuration.LongDateForm, myStr[3])
-			fmt.Println(leftPad(strconv.Itoa(id+1), 3, "0"), ") ", myStr[0], "/", myStr[1], "/", myStr[2], " at ", t)
+			fmt.Println(utils.LeftPad(strconv.Itoa(id+1), 3, "0"), ") ", myStr[0], "/", myStr[1], "/", myStr[2], " at ", t)
 		}
 	}
 
@@ -231,7 +236,7 @@ func appQuest1(full bool) error {
 	//fmt.Println(text)
 
 	if listInt, err := strconv.Atoi(text); err == nil {
-		if len(list) >= listInt && listInt > 0 {
+		if len(utils.List) >= listInt && listInt > 0 {
 			fmt.Println("The next step can take a while... please wait...")
 			// ToDo: add next step - download backup data
 			_ = appQuest2(listInt)
@@ -262,14 +267,15 @@ func appQuest1(full bool) error {
 // download backup
 func appQuest2(index int) error {
 	var err error
+	var backupPath = backupPath
 	// normalize index
 	index = index - 1
 
-	slicedStr := strings.Split(list2[index], "/")
+	slicedStr := strings.Split(utils.List2[index], "/")
 
-	fmt.Println("Download: " + list2[index])
+	fmt.Println("Download: " + utils.List2[index])
 
-	_, err = SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", backupType, "base"}, "/"))
+	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"), &backupPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -284,7 +290,7 @@ func appQuest2(index int) error {
 	for _, file := range files {
 		objects = append(objects, file.Name())
 	}
-	err = UnpackFiles(objects)
+	err = swiftcli.UnpackFiles(objects)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -306,7 +312,7 @@ func appQuestManual() error {
 	for _, file := range files {
 		objects = append(objects, file.Name())
 	}
-	err := UnpackFiles(objects)
+	err := swiftcli.UnpackFiles(objects)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -327,9 +333,9 @@ func appProcessRestore() error {
 
 				table := strings.TrimSuffix(f.Name(), ".sql")
 
-				if backupType == "mysql" {
+				if utils.BackupType == "mysql" {
 					appMysqlDB(table)
-				} else if backupType == "pgsql" {
+				} else if utils.BackupType == "pgsql" {
 					appPgsqlDB(table)
 				}
 			}
@@ -345,7 +351,7 @@ func appMysqlDB(table string) error {
 	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
 
 	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
-	_ = exeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
+	_ = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
 
 	fmt.Println(">> database restore done: " + table)
 	return nil
@@ -355,7 +361,7 @@ func appPgsqlDB(table string) error {
 
 	log.Println("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
 
-	_ = exeCmd("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
+	_ = utils.ExeCmd("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
 
 	fmt.Println(">> database restore done: " + table)
 	return nil
