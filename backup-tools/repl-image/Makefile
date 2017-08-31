@@ -1,5 +1,5 @@
 SHELL       := /bin/sh
-REGISTRY    ?=
+REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/replication-tools
 VERSION     ?= v0.1.2
 
@@ -15,10 +15,9 @@ endif
 
 .PHONY: build
 build:
-	docker build $(BUILD_ARGS) -t go-build:latest --rm go-src/
-	docker run go-build tar -cvf - /usr/local/sbin/replication-run > files/replication-run.tar
-	docker build $(BUILD_ARGS) -t $(REGISTRY)/$(IMAGE):$(VERSION) --rm .
+	docker build $(BUILD_ARGS) --squash -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
+	docker system prune -f
 
 .PHONY: push
 push:
-	docker push $(REGISTRY)/$(IMAGE):$(VERSION)
+	docker push $(REGISTRY)$(IMAGE):$(VERSION)
