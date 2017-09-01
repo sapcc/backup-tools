@@ -7,7 +7,7 @@ RUN set -uex; \
     export GOPATH=/go; \
     go get ... ; \
     CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags '-s -w' -installsuffix cgo -o /go/bin/replication-run; \
-    mkdir -p /backup/env 
+    mkdir -p /backup/env
 
 FROM scratch
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"

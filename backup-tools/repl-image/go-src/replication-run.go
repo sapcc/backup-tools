@@ -51,5 +51,5 @@ func runServer(c *cli.Context) {
 }
 
 func versionString() string {
-	return fmt.Sprintf("0.1.2")
+	return fmt.Sprintf("0.2.0")
 }

@@ -1,10 +1,16 @@
+FROM golang as gobuilder
+COPY go-src/ /go/src/github.com/sapcc/containers/backup-tools/backup-etcd-image/go-src/
+RUN set -uex; \
+    cd /go/src/github.com/sapcc/containers/backup-tools/backup-etcd-image/go-src; \
+    export GOPATH=/go; \
+    go get ./...; \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o /go/bin/backup-etcd
+
+
 FROM quay.io/coreos/etcd:v2.3.8
-
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
-
-ADD files/backup-etcd.tar /bin/
-ADD files/backup-certs.tar /
-
+COPY --from=gobuilder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=gobuilder /go/bin/backup-etcd /replication-run
+COPY --from=gobuilder /backup/env /backup/env
 VOLUME ["/backup"]
-
-ENTRYPOINT ["/bin/backup-etcd"]
+ENTRYPOINT ["/backup-etcd"]
