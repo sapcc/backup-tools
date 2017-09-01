@@ -98,8 +98,6 @@ func SwiftDownloadFile(clientSwift *swift.Connection, file string, backupDir *st
 		*backupDir = utils.BackupPath
 	}
 
-	fmt.Println("Download File: " + file)
-
 	mypath = filepath.Join(*backupDir, path.Base(file))
 	if useRealPath {
 		mypath = path.Clean(filepath.Join(*backupDir, file))
@@ -253,7 +251,6 @@ func SwiftUploadPrefix(clientSwift *swift.Connection, prefix string) ([]string, 
 func UnpackFiles(files []string) error {
 	for _, file := range files {
 		if strings.HasSuffix(file, ".tar.gz") {
-
 			err := utils.Ungzip(file, utils.BackupPath)
 			if err != nil {
 				log.Println("ungzip", file, utils.BackupPath)
@@ -264,20 +261,16 @@ func UnpackFiles(files []string) error {
 				log.Println("untarSplit", strings.TrimSuffix(file, ".gz"), utils.BackupPath)
 				log.Fatal(err)
 			}
-			defer os.Remove(file)
-			defer os.Remove(strings.TrimSuffix(file, ".gz"))
-
+			os.Remove(file)
+			os.Remove(strings.TrimSuffix(file, ".gz"))
 		} else if strings.HasSuffix(file, ".gz") {
-
 			err := utils.Ungzip(file, utils.BackupPath)
 			if err != nil {
 				log.Println(file, utils.BackupPath)
 				log.Fatal(err)
 			}
-			defer os.Remove(file)
-
+			os.Remove(file)
 		}
-
 	}
 	return nil
 }

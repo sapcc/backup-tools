@@ -7,22 +7,22 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
-	"fmt"
 	"github.com/ncw/swift"
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
 	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
+	"github.com/sapcc/containers/backup-tools/go-src/utils"
 )
 
-const maxWorkers = 2 // normal 10; debug 2
+const maxWorkers = 5 // normal 5; debug 2
 
 var (
 	currentFilesDone = 0
 	expiration       int64
 	backupDir        = "/backup/tmp"
 	EnvFrom          *Env
-	EnvTo            []*Env
-	AllToFiles       = make(map[int][]string)
+	EnvTo            = make([]*Env, 2)
 )
 
 type Env struct {
@@ -46,23 +46,24 @@ func doWork(id int, j Job) {
 	lastDownload := false
 	from := j.EnvFrom
 
-	log.Printf("worker%d: started process %s, FileNumber %d of %d\n", id, j.File, j.FileNumber, j.FileAllCount)
+	log.Printf("Worker%d File %d/%d: started process file %s\n", id, j.FileNumber, j.FileAllCount, j.File)
 
 	for _, to := range j.EnvTo {
 		uploadDone = false
 
 		// skip if file already on the replication region present
 		if stringInSlice(j.File, to.Files) {
+			log.Printf("Worker%d File %d/%d: Skip %s to %s\n", id, j.FileNumber, j.FileAllCount, j.File, to.Cfg.OsRegionName)
 			continue
 		}
 
 		// Download only file if not already done
 		if !lastDownload {
-			log.Printf("worker%d: Download File: %s from %s\n", id, j.File, from.Cfg.OsRegionName)
+			log.Printf("Worker%d File %d/%d: Download File: %s from %s\n", id, j.FileNumber, j.FileAllCount, j.File, from.Cfg.OsRegionName)
 			dlFilePath, dlErr = swiftcli.SwiftDownloadFile(from.SwiftCli, j.File, &backupDir, true)
 			if dlErr != nil {
 				PromGauge.SetError()
-				log.Printf("worker%d: Download File Error: %s\n", id, dlErr)
+				log.Printf("Worker%d File %d/%d: Download File Error: %s\n", id, j.FileNumber, j.FileAllCount, dlErr)
 				// GoToEndWhileDownloadError used for exit the replication for error while downloading the file
 				goto GoToEndWhileDownloadError
 				break
@@ -73,11 +74,11 @@ func doWork(id int, j Job) {
 		// Upload file if no error before was triggered, and the dlFilePath is longer then 0
 		if dlErr == nil && len(dlFilePath) > 0 {
 			fakeName := strings.TrimPrefix(dlFilePath, backupDir)
-			log.Printf("worker%d: Upload File: %s to %s\n", id, fakeName, to.Cfg.OsRegionName)
+			log.Printf("Worker%d File %d/%d: Upload File: %s to %s\n", id, j.FileNumber, j.FileAllCount, fakeName, to.Cfg.OsRegionName)
 			uploadDone, upErr = swiftcli.SwiftUploadFile(to.SwiftCli, dlFilePath, &expiration, &fakeName)
 			if upErr != nil || !uploadDone {
 				PromGauge.SetError()
-				log.Printf("worker%d: Upload File Error: %s\n", id, upErr)
+				log.Printf("Worker%d File %d/%d: Upload File Error: %s\n", id, j.FileNumber, j.FileAllCount, upErr)
 			}
 		}
 	}
@@ -85,7 +86,7 @@ func doWork(id int, j Job) {
 	// GoToEndWhileDownloadError used for exit the replication for error while downloading the file
 GoToEndWhileDownloadError:
 
-	if _, err := os.Stat("/path/to/whatever"); !os.IsNotExist(err) {
+	if _, err := os.Stat(dlFilePath); !os.IsNotExist(err) {
 		os.Remove(dlFilePath)
 	}
 
@@ -93,13 +94,15 @@ GoToEndWhileDownloadError:
 
 	PromGauge.CurrentFile(currentFilesDone)
 
-	log.Printf("worker%d: completed %s, FileNumber %d of %d!\n", id, j.File, j.FileNumber, j.FileAllCount)
-
-	// TODO: debug
-	panic("Stop after One!")
+	log.Printf("Worker%d File %d/%d: completed %s\n", id, j.FileNumber, j.FileAllCount, j.File)
 }
 
 func StartJobWorkers() {
+
+	var fileCounter = 0
+	var countAllFiles = 0
+	var startTime = time.Now()
+	log.Println("Start replication task!")
 	// channel for jobs
 	jobs := make(chan Job)
 
@@ -116,39 +119,47 @@ func StartJobWorkers() {
 		}(i)
 	}
 
-	countAllFiles := len(EnvFrom.Files)
+	for id, file := range EnvFrom.Files {
+
+		if stringInAllSlice(file, EnvTo) {
+			EnvFrom.Files[id] = ""
+			//log.Printf("Skip File: %s its already on all replication regions\n", file)
+		}
+
+	}
+
+	EnvFrom.Files = utils.DeleteEmpty(EnvFrom.Files)
+
+	countAllFiles = len(EnvFrom.Files)
 	PromGauge.AllFiles(countAllFiles)
 
 	// add jobs
-	for i, file := range EnvFrom.Files {
+	for _, file := range EnvFrom.Files {
 
-		fId := i + 1
-
-		if stringInAllSlice(file, EnvTo) {
-			log.Printf("Skip File: %s its already on all replication regions, file %d of %d\n", file, fId, countAllFiles)
-			continue
-		}
+		fileCounter += 1
 
 		jobs <- Job{
 			EnvFrom:      EnvFrom,
 			EnvTo:        EnvTo,
 			File:         file,
 			FileAllCount: countAllFiles,
-			FileNumber:   fId,
+			FileNumber:   fileCounter,
 		}
 	}
 	close(jobs)
 
 	// wait for workers to complete
 	wg.Wait()
+
+	os.RemoveAll(backupDir)
+
+	var replicationDuration = time.Since(startTime)
+	log.Printf("End replication task in %v\n", replicationDuration-(replicationDuration%time.Second))
 }
 
 func LoadAndStartJobs() {
 	// cfg used for the parsed YAML Configuration
 	cfg := configuration.YAMLReplication("/backup/env/config.yml")
-
-	// TODO: debug
-	fmt.Println(cfg)
 
 	var err error
 	var tmpExpireInt int
@@ -182,8 +193,8 @@ func LoadAndStartJobs() {
 
 	// Create for each replication region an own Env
 	for id, toConfig := range cfg.To {
-		EnvTo = append(EnvTo, &Env{Cfg: toConfig})
-		EnvTo[id].Cfg.ContainerPrefix = EnvTo[id].Cfg.OsRegionName
+		EnvTo[id] = &Env{Cfg: toConfig}
+		EnvTo[id].Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
 		EnvTo[id].SwiftCli = swiftcli.SwiftConnection(
 			EnvTo[id].Cfg.OsAuthVersion,
 			EnvTo[id].Cfg.OsAuthURL,
@@ -214,7 +225,6 @@ func stringInSlice(a string, list []string) bool {
 func stringInAllSlice(a string, lists []*Env) bool {
 	count := len(lists)
 	found := 0
-
 	for _, to := range lists {
 		for _, b := range to.Files {
 			if b == a {
@@ -223,7 +233,6 @@ func stringInAllSlice(a string, lists []*Env) bool {
 			}
 		}
 	}
-
 	if count == found {
 		return true
 	}

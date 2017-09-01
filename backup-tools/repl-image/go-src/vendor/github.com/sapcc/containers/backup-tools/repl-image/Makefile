@@ -15,15 +15,9 @@ endif
 
 .PHONY: build
 build:
-	mkdir -p go-src/files && tar -cvf go-src/files/go-src.tar --exclude ".git" --exclude ".cache/" --exclude "*.tar" -C ~/go/ .
-	docker build $(BUILD_ARGS) --squash -t go-build:latest --rm go-src/
-	test -f go-src/files/go-src.tar && rm go-src/files/go-src.tar
-	docker run --rm go-build tar -cvf - /replication-run /backup/env/config.yml > files/replication-run.tar
-	docker run --rm go-build tar -cvf - /etc/ssl/certs/ca-certificates.crt > files/backup-certs.tar
-	docker rmi go-build
 	docker build $(BUILD_ARGS) --squash -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
 	docker system prune -f
 
 .PHONY: push
 push:
-	docker push $(REGISTRY)/$(IMAGE):$(VERSION)
+	docker push $(REGISTRY)$(IMAGE):$(VERSION)

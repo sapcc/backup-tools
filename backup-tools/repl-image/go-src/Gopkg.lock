@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "83cd65fc365ace80eb6b6ecfc45203e43edfbc70"
+  revision = "5afd06f9d81a86d6e3bb7dc702d6bd148ea3ff23"
 
 [[projects]]
   name = "github.com/matttproud/golang_protobuf_extensions"
@@ -53,7 +53,7 @@
   branch = "backup-replication-golang"
   name = "github.com/sapcc/containers"
   packages = ["backup-tools/go-src/configuration","backup-tools/go-src/prometheus","backup-tools/go-src/swiftcli","backup-tools/go-src/underscore","backup-tools/go-src/utils"]
-  revision = "9c012bc2e784803fb8c909432cdca5ce682cb12c"
+  revision = "9793475af9c5a8a5689ea66be48c8907ccfae10b"
 
 [[projects]]
   name = "github.com/urfave/cli"
@@ -76,6 +76,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "db9e436ceab6b180a96612d96e06cbc9515a6d94fb87d7de846a75d0993ce8dc"
+  inputs-digest = "50ebe7cbb6e7211069c9a32806f1eb7bba59a38ed15fdd8002181f509b80f1ff"
   solver-name = "gps-cdcl"
   solver-version = 1

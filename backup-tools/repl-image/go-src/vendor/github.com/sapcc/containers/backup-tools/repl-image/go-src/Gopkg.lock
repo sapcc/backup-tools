@@ -50,10 +50,10 @@
   revision = "e645f4e5aaa8506fc71d6edbc5c4ff02c04c46f2"
 
 [[projects]]
-  branch = "master"
+  branch = "backup-replication-golang"
   name = "github.com/sapcc/containers"
   packages = ["backup-tools/go-src/configuration","backup-tools/go-src/prometheus","backup-tools/go-src/swiftcli","backup-tools/go-src/underscore","backup-tools/go-src/utils"]
-  revision = "34205f72e3f0e4ceec81b5b700fe1de20fa8f3b8"
+  revision = "9c012bc2e784803fb8c909432cdca5ce682cb12c"
 
 [[projects]]
   name = "github.com/urfave/cli"
@@ -67,9 +67,15 @@
   packages = ["."]
   revision = "4431f6b51265b1e0b76af4dafc09d6f12c2bdcd0"
 
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "eb3733d160e74a9c7e442f435eb3bea458e1d19f"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "11a4fda47e759f87d23751bfb12f3aeda329cb7be541c0acaec7b3257c28edd7"
+  inputs-digest = "db9e436ceab6b180a96612d96e06cbc9515a6d94fb87d7de846a75d0993ce8dc"
   solver-name = "gps-cdcl"
   solver-version = 1
