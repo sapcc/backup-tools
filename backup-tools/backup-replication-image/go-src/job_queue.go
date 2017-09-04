@@ -3,6 +3,7 @@ package main
 import (
 	_ "expvar"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 const maxWorkers = 5 // normal 5; debug 2
 
 var (
+	alreadyPrinted   int
 	currentFilesDone = 0
 	expiration       int64
 	backupDir        = "/backup/tmp"
@@ -46,20 +48,25 @@ func doWork(id int, j Job) {
 	lastDownload := false
 	from := j.EnvFrom
 
-	log.Printf("Worker%d File %d/%d: started process file %s\n", id, j.FileNumber, j.FileAllCount, j.File)
-
+	if DebugOutput == "yes" {
+		log.Printf("Worker%d File %d/%d: started process file %s\n", id, j.FileNumber, j.FileAllCount, j.File)
+	}
 	for _, to := range j.EnvTo {
 		uploadDone = false
 
 		// skip if file already on the replication region present
 		if stringInSlice(j.File, to.Files) {
-			log.Printf("Worker%d File %d/%d: Skip %s to %s\n", id, j.FileNumber, j.FileAllCount, j.File, to.Cfg.OsRegionName)
+			if DebugOutput == "yes" {
+				log.Printf("Worker%d File %d/%d: Skip %s to %s\n", id, j.FileNumber, j.FileAllCount, j.File, to.Cfg.OsRegionName)
+			}
 			continue
 		}
 
 		// Download only file if not already done
 		if !lastDownload {
-			log.Printf("Worker%d File %d/%d: Download File: %s from %s\n", id, j.FileNumber, j.FileAllCount, j.File, from.Cfg.OsRegionName)
+			if DebugOutput == "yes" {
+				log.Printf("Worker%d File %d/%d: Download File: %s from %s\n", id, j.FileNumber, j.FileAllCount, j.File, from.Cfg.OsRegionName)
+			}
 			dlFilePath, dlErr = swiftcli.SwiftDownloadFile(from.SwiftCli, j.File, &backupDir, true)
 			if dlErr != nil {
 				PromGauge.SetError()
@@ -74,7 +81,9 @@ func doWork(id int, j Job) {
 		// Upload file if no error before was triggered, and the dlFilePath is longer then 0
 		if dlErr == nil && len(dlFilePath) > 0 {
 			fakeName := strings.TrimPrefix(dlFilePath, backupDir)
-			log.Printf("Worker%d File %d/%d: Upload File: %s to %s\n", id, j.FileNumber, j.FileAllCount, fakeName, to.Cfg.OsRegionName)
+			if DebugOutput == "yes" {
+				log.Printf("Worker%d File %d/%d: Upload File: %s to %s\n", id, j.FileNumber, j.FileAllCount, fakeName, to.Cfg.OsRegionName)
+			}
 			uploadDone, upErr = swiftcli.SwiftUploadFile(to.SwiftCli, dlFilePath, &expiration, &fakeName)
 			if upErr != nil || !uploadDone {
 				PromGauge.SetError()
@@ -94,7 +103,16 @@ GoToEndWhileDownloadError:
 
 	PromGauge.CurrentFile(currentFilesDone)
 
-	log.Printf("Worker%d File %d/%d: completed %s\n", id, j.FileNumber, j.FileAllCount, j.File)
+	if DebugOutput == "yes" {
+		log.Printf("Worker%d File %d/%d: completed %s\n", id, j.FileNumber, j.FileAllCount, j.File)
+	} else {
+		num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
+
+		if num > alreadyPrinted || num == alreadyPrinted {
+			alreadyPrinted += 10
+			log.Printf("%.2f%% of replication done\n", num)
+		}
+	}
 }
 
 func StartJobWorkers() {
@@ -160,6 +178,9 @@ func StartJobWorkers() {
 func LoadAndStartJobs() {
 	// cfg used for the parsed YAML Configuration
 	cfg := configuration.YAMLReplication("/backup/env/config.yml")
+
+	// Set all to false for a new loop as default
+	alreadyPrinted = 0
 
 	var err error
 	var tmpExpireInt int
@@ -237,4 +258,13 @@ func stringInAllSlice(a string, lists []*Env) bool {
 		return true
 	}
 	return false
+}
+
+func Round(f float64) float64 {
+	return math.Floor(f + .5)
+}
+
+func RoundPlus(f float64, places int) float64 {
+	shift := math.Pow(10, float64(places))
+	return Round(f*shift) / shift
 }

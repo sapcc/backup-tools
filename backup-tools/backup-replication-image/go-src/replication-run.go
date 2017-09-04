@@ -15,8 +15,14 @@ const (
 
 var (
 	// PromGauge is the prometheus pointer to use in the other files on same directory path
-	PromGauge *prometheus.Gauge
+	PromGauge   *prometheus.Gauge
+	DebugOutput = "no"
 )
+
+func init() {
+	// DebugOutput enables with a "yes" the output of everything while the program is running.
+	DebugOutput = os.Getenv("DEBUG")
+}
 
 func main() {
 	app := cli.NewApp()
