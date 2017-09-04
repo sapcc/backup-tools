@@ -70,7 +70,7 @@ func doWork(id int, j Job) {
 			dlFilePath, dlErr = swiftcli.SwiftDownloadFile(from.SwiftCli, j.File, &backupDir, true)
 			if dlErr != nil {
 				PromGauge.SetError()
-				log.Printf("Worker%d File %d/%d: Download File Error: %s\n", id, j.FileNumber, j.FileAllCount, dlErr)
+				log.Printf("Worker%d File %d/%d (%s): Download File Error: %s\n", id, j.FileNumber, j.FileAllCount, j.File, dlErr)
 				// GoToEndWhileDownloadError used for exit the replication for error while downloading the file
 				goto GoToEndWhileDownloadError
 				break
@@ -87,7 +87,7 @@ func doWork(id int, j Job) {
 			uploadDone, upErr = swiftcli.SwiftUploadFile(to.SwiftCli, dlFilePath, &expiration, &fakeName)
 			if upErr != nil || !uploadDone {
 				PromGauge.SetError()
-				log.Printf("Worker%d File %d/%d: Upload File Error: %s\n", id, j.FileNumber, j.FileAllCount, upErr)
+				log.Printf("Worker%d File %d/%d (%s): Upload File Error: %s\n", id, j.FileNumber, j.FileAllCount, j.File, upErr)
 			}
 		}
 	}
@@ -105,14 +105,15 @@ GoToEndWhileDownloadError:
 
 	if DebugOutput == "yes" {
 		log.Printf("Worker%d File %d/%d: completed %s\n", id, j.FileNumber, j.FileAllCount, j.File)
-	} else {
-		num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
-
-		if num > alreadyPrinted || num == alreadyPrinted {
-			alreadyPrinted += 10
-			log.Printf("%.2f%% of replication done\n", num)
-		}
 	}
+
+	num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
+
+	if num > alreadyPrinted || num == alreadyPrinted {
+		alreadyPrinted += 5
+		log.Printf("%d%% of replication done\n", num)
+	}
+
 }
 
 func StartJobWorkers() {
@@ -142,6 +143,9 @@ func StartJobWorkers() {
 		if stringInAllSlice(file, EnvTo) {
 			EnvFrom.Files[id] = ""
 			//log.Printf("Skip File: %s its already on all replication regions\n", file)
+		}
+		if strings.HasSuffix(file, "base") {
+			EnvFrom.Files[id] = ""
 		}
 
 	}
@@ -262,9 +266,4 @@ func stringInAllSlice(a string, lists []*Env) bool {
 
 func Round(f float64) float64 {
 	return math.Floor(f + .5)
-}
-
-func RoundPlus(f float64, places int) float64 {
-	shift := math.Pow(10, float64(places))
-	return Round(f*shift) / shift
 }
