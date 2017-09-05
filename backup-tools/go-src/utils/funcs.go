@@ -76,12 +76,6 @@ func ExeCmdBashC(cmd string) string {
 	return out.String()
 }
 
-func DeleteFile(path string) error {
-	// delete file
-	var err = os.Remove(path)
-	return err
-}
-
 func DeleteEmpty(s []string) []string {
 	var r []string
 	for _, str := range s {
