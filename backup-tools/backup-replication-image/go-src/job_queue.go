@@ -19,6 +19,7 @@ import (
 const maxWorkers = 5 // normal 5; debug 2
 
 var (
+	initialized      bool
 	alreadyPrinted   int
 	currentFilesDone = 0
 	expiration       int64
@@ -177,73 +178,82 @@ func StartJobWorkers() {
 
 func LoadAndStartJobs() {
 	var err error
-	// cfg used for the parsed YAML Configuration
-	cfg := configuration.YAMLReplication("/backup/env/config.yml")
 
-	// Set all to false for a new loop as default
-	alreadyPrinted = 0
+	if !initialized {
+		// cfg used for the parsed YAML Configuration
+		cfg := configuration.YAMLReplication("/backup/env/config.yml")
 
-	var tmpExpireInt int
-	tmpExpire := os.Getenv("BACKUP_EXPIRE_AFTER")
-	if tmpExpire == "" {
-		expiration = 864000
-	} else {
-		tmpExpireInt, err = strconv.Atoi(tmpExpire)
-		if err == nil {
-			expiration = int64(tmpExpireInt)
-		} else {
+		// Set all to false for a new loop as default
+		alreadyPrinted = 0
+
+		var tmpExpireInt int
+		tmpExpire := os.Getenv("BACKUP_EXPIRE_AFTER")
+		if tmpExpire == "" {
 			expiration = 864000
+		} else {
+			tmpExpireInt, err = strconv.Atoi(tmpExpire)
+			if err == nil {
+				expiration = int64(tmpExpireInt)
+			} else {
+				expiration = 864000
+			}
 		}
-	}
 
-	os.MkdirAll(backupDir, 0777)
+		os.MkdirAll(backupDir, 0777)
 
-	EnvFrom = &Env{Cfg: cfg.From}
-	EnvFrom.Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
-	EnvFrom.SwiftCli, err = swiftcli.SwiftConnection(
-		EnvFrom.Cfg.OsAuthVersion,
-		EnvFrom.Cfg.OsAuthURL,
-		EnvFrom.Cfg.OsUsername,
-		EnvFrom.Cfg.OsPassword,
-		EnvFrom.Cfg.OsUserDomainName,
-		EnvFrom.Cfg.OsProjectName,
-		EnvFrom.Cfg.OsProjectDomainName,
-		EnvFrom.Cfg.OsRegionName,
-		EnvFrom.Cfg.ContainerPrefix)
-	if err != nil {
-		log.Println("Error can't connect swift for", EnvFrom.Cfg.OsRegionName, err)
-		return
-	}
-	EnvFrom.Files, err = swiftcli.SwiftListPrefixFiles(EnvFrom.SwiftCli, EnvFrom.Cfg.ContainerPrefix)
-
-	if err != nil {
-		log.Println("Error fet files for", EnvFrom.Cfg.OsRegionName, err)
-		return
-	}
-
-	// Create for each replication region an own Env
-	for id, toConfig := range cfg.To {
-		EnvTo[id] = &Env{Cfg: toConfig}
-		EnvTo[id].Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
-		EnvTo[id].SwiftCli, err = swiftcli.SwiftConnection(
-			EnvTo[id].Cfg.OsAuthVersion,
-			EnvTo[id].Cfg.OsAuthURL,
-			EnvTo[id].Cfg.OsUsername,
-			EnvTo[id].Cfg.OsPassword,
-			EnvTo[id].Cfg.OsUserDomainName,
-			EnvTo[id].Cfg.OsProjectName,
-			EnvTo[id].Cfg.OsProjectDomainName,
-			EnvTo[id].Cfg.OsRegionName,
-			EnvTo[id].Cfg.ContainerPrefix)
+		EnvFrom = &Env{Cfg: cfg.From}
+		EnvFrom.Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
+		EnvFrom.SwiftCli, err = swiftcli.SwiftConnection(
+			EnvFrom.Cfg.OsAuthVersion,
+			EnvFrom.Cfg.OsAuthURL,
+			EnvFrom.Cfg.OsUsername,
+			EnvFrom.Cfg.OsPassword,
+			EnvFrom.Cfg.OsUserDomainName,
+			EnvFrom.Cfg.OsProjectName,
+			EnvFrom.Cfg.OsProjectDomainName,
+			EnvFrom.Cfg.OsRegionName,
+			EnvFrom.Cfg.ContainerPrefix)
 		if err != nil {
-			log.Println("Error can't connect swift for", EnvTo[id].Cfg.OsRegionName, err)
+			log.Println("Error can't connect swift for", EnvFrom.Cfg.OsRegionName, err)
 			return
 		}
+
+		// Create for each replication region an own Env
+		for id, toConfig := range cfg.To {
+			EnvTo[id] = &Env{Cfg: toConfig}
+			EnvTo[id].Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
+			EnvTo[id].SwiftCli, err = swiftcli.SwiftConnection(
+				EnvTo[id].Cfg.OsAuthVersion,
+				EnvTo[id].Cfg.OsAuthURL,
+				EnvTo[id].Cfg.OsUsername,
+				EnvTo[id].Cfg.OsPassword,
+				EnvTo[id].Cfg.OsUserDomainName,
+				EnvTo[id].Cfg.OsProjectName,
+				EnvTo[id].Cfg.OsProjectDomainName,
+				EnvTo[id].Cfg.OsRegionName,
+				EnvTo[id].Cfg.ContainerPrefix)
+			if err != nil {
+				log.Println("Error can't connect swift for", EnvTo[id].Cfg.OsRegionName, err)
+				return
+			}
+		}
+
+		initialized = true
+	}
+
+	EnvFrom.Files, err = swiftcli.SwiftListPrefixFiles(EnvFrom.SwiftCli, EnvFrom.Cfg.ContainerPrefix)
+
+	for id := range EnvTo {
 		EnvTo[id].Files, err = swiftcli.SwiftListPrefixFiles(EnvTo[id].SwiftCli, EnvTo[id].Cfg.ContainerPrefix)
 		if err != nil {
 			log.Println("Error get files for", EnvTo[id].Cfg.OsRegionName, err)
 			return
 		}
+	}
+
+	if err != nil {
+		log.Println("Error fet files for", EnvFrom.Cfg.OsRegionName, err)
+		return
 	}
 
 	// Start Job Worker
