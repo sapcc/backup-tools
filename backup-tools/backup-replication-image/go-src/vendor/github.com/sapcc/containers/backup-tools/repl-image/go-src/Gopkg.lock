@@ -52,7 +52,7 @@
 [[projects]]
   branch = "backup-replication-golang"
   name = "github.com/sapcc/containers"
-  packages = ["backup-tools/go-src/configuration","backup-tools/go-src/prometheus","backup-tools/go-src/swiftcli","backup-tools/go-src/underscore","backup-tools/go-src/utils"]
+  packages = ["backup-tools/go-src/configuration","backup-tools/go-src/prometheus","backup-tools/go-src/swiftcli","backup-tools/go-src/utils"]
   revision = "9c012bc2e784803fb8c909432cdca5ce682cb12c"
 
 [[projects]]

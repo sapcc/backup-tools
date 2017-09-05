@@ -5,9 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/sapcc/containers/backup-tools/go-src/underscore"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -88,18 +85,18 @@ func YAMLReplication(filename string) EnvironmentYamlReplication {
 func init() {
 	backupRegionName := os.Getenv("BACKUP_REGION_NAME")
 	if len(backupRegionName) == 0 {
-		backupRegionName = os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName")))
+		backupRegionName = os.Getenv("OS_REGION_NAME")
 	}
 	DefaultConfiguration = &EnvironmentStruct{
 		ContainerPrefix:      strings.Join([]string{backupRegionName, os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/"),
-		OsAuthURL:            os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthURL"))),
-		OsAuthVersion:        os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthVersion"))),
-		OsIdentityAPIVersion: os.Getenv(strings.ToUpper(underscore.Underscore("OsIdentityAPIVersion"))),
-		OsUsername:           os.Getenv(strings.ToUpper(underscore.Underscore("OsUsername"))),
-		OsUserDomainName:     os.Getenv(strings.ToUpper(underscore.Underscore("OsUserDomainName"))),
-		OsProjectName:        os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectName"))),
-		OsProjectDomainName:  os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName"))),
-		OsRegionName:         os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName"))),
-		OsPassword:           os.Getenv(strings.ToUpper(underscore.Underscore("OsPassword"))),
+		OsAuthURL:            os.Getenv("OS_AUTH_URL"),
+		OsAuthVersion:        os.Getenv("OS_AUTH_VERSION"),
+		OsIdentityAPIVersion: os.Getenv("OS_IDENTITY_API_VERSION"),
+		OsUsername:           os.Getenv("OS_USERNAME"),
+		OsUserDomainName:     os.Getenv("OS_USER_DOMAIN_NAME"),
+		OsProjectName:        os.Getenv("OS_PROJECT_NAME"),
+		OsProjectDomainName:  os.Getenv("OS_PROJECT_DOMAIN_NAME"),
+		OsRegionName:         os.Getenv("OS_REGION_NAME"),
+		OsPassword:           os.Getenv("OS_PASSWORD"),
 	}
 }
