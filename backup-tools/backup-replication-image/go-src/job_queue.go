@@ -48,15 +48,14 @@ func doWork(id int, j Job) {
 	lastDownload := false
 	from := j.EnvFrom
 
-	if DebugOutput == "yes" {
+	if DebugOutput {
 		log.Printf("Worker%d File %d/%d: started process file %s\n", id, j.FileNumber, j.FileAllCount, j.File)
 	}
 	for _, to := range j.EnvTo {
-		uploadDone = false
 
 		// skip if file already on the replication region present
 		if stringInSlice(j.File, to.Files) {
-			if DebugOutput == "yes" {
+			if DebugOutput {
 				log.Printf("Worker%d File %d/%d: Skip %s to %s\n", id, j.FileNumber, j.FileAllCount, j.File, to.Cfg.OsRegionName)
 			}
 			continue
@@ -64,8 +63,8 @@ func doWork(id int, j Job) {
 
 		// Download only file if not already done
 		if !lastDownload {
-			if DebugOutput == "yes" {
-				log.Printf("Worker%d File %d/%d: Download File: %s from %s\n", id, j.FileNumber, j.FileAllCount, j.File, from.Cfg.OsRegionName)
+			if DebugOutput {
+				log.Printf("Worker%d File %d/%d: Download File: %s from %s\n", id, j.FileNumber, j.FileAllCount, j.File, j.EnvFrom.Cfg.OsRegionName)
 			}
 			dlFilePath, dlErr = swiftcli.SwiftDownloadFile(from.SwiftCli, j.File, &backupDir, true)
 			if dlErr != nil {
@@ -81,7 +80,7 @@ func doWork(id int, j Job) {
 		// Upload file if no error before was triggered, and the dlFilePath is longer then 0
 		if dlErr == nil && len(dlFilePath) > 0 {
 			fakeName := strings.TrimPrefix(dlFilePath, backupDir)
-			if DebugOutput == "yes" {
+			if DebugOutput {
 				log.Printf("Worker%d File %d/%d: Upload File: %s to %s\n", id, j.FileNumber, j.FileAllCount, fakeName, to.Cfg.OsRegionName)
 			}
 			uploadDone, upErr = swiftcli.SwiftUploadFile(to.SwiftCli, dlFilePath, &expiration, &fakeName)
@@ -95,15 +94,13 @@ func doWork(id int, j Job) {
 	// GoToEndWhileDownloadError used for exit the replication for error while downloading the file
 GoToEndWhileDownloadError:
 
-	if _, err := os.Stat(dlFilePath); !os.IsNotExist(err) {
-		os.Remove(dlFilePath)
-	}
+	os.Remove(dlFilePath)
 
 	currentFilesDone += 1
 
 	PromGauge.CurrentFile(currentFilesDone)
 
-	if DebugOutput == "yes" {
+	if DebugOutput {
 		log.Printf("Worker%d File %d/%d: completed %s\n", id, j.FileNumber, j.FileAllCount, j.File)
 	}
 
@@ -175,18 +172,17 @@ func StartJobWorkers() {
 
 	os.RemoveAll(backupDir)
 
-	var replicationDuration = time.Since(startTime)
-	log.Printf("End replication task in %v\n", replicationDuration-(replicationDuration%time.Second))
+	log.Printf("End replication task in %g seconds\n", time.Since(startTime).Seconds())
 }
 
 func LoadAndStartJobs() {
+	var err error
 	// cfg used for the parsed YAML Configuration
 	cfg := configuration.YAMLReplication("/backup/env/config.yml")
 
 	// Set all to false for a new loop as default
 	alreadyPrinted = 0
 
-	var err error
 	var tmpExpireInt int
 	tmpExpire := os.Getenv("BACKUP_EXPIRE_AFTER")
 	if tmpExpire == "" {
@@ -204,7 +200,7 @@ func LoadAndStartJobs() {
 
 	EnvFrom = &Env{Cfg: cfg.From}
 	EnvFrom.Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
-	EnvFrom.SwiftCli = swiftcli.SwiftConnection(
+	EnvFrom.SwiftCli, err = swiftcli.SwiftConnection(
 		EnvFrom.Cfg.OsAuthVersion,
 		EnvFrom.Cfg.OsAuthURL,
 		EnvFrom.Cfg.OsUsername,
@@ -214,13 +210,22 @@ func LoadAndStartJobs() {
 		EnvFrom.Cfg.OsProjectDomainName,
 		EnvFrom.Cfg.OsRegionName,
 		EnvFrom.Cfg.ContainerPrefix)
-	EnvFrom.Files, _ = swiftcli.SwiftListPrefixFiles(EnvFrom.SwiftCli, EnvFrom.Cfg.ContainerPrefix)
+	if err != nil {
+		log.Println("Error can't connect swift for", EnvFrom.Cfg.OsRegionName, err)
+		return
+	}
+	EnvFrom.Files, err = swiftcli.SwiftListPrefixFiles(EnvFrom.SwiftCli, EnvFrom.Cfg.ContainerPrefix)
+
+	if err != nil {
+		log.Println("Error fet files for", EnvFrom.Cfg.OsRegionName, err)
+		return
+	}
 
 	// Create for each replication region an own Env
 	for id, toConfig := range cfg.To {
 		EnvTo[id] = &Env{Cfg: toConfig}
 		EnvTo[id].Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
-		EnvTo[id].SwiftCli = swiftcli.SwiftConnection(
+		EnvTo[id].SwiftCli, err = swiftcli.SwiftConnection(
 			EnvTo[id].Cfg.OsAuthVersion,
 			EnvTo[id].Cfg.OsAuthURL,
 			EnvTo[id].Cfg.OsUsername,
@@ -230,11 +235,20 @@ func LoadAndStartJobs() {
 			EnvTo[id].Cfg.OsProjectDomainName,
 			EnvTo[id].Cfg.OsRegionName,
 			EnvTo[id].Cfg.ContainerPrefix)
-		EnvTo[id].Files, _ = swiftcli.SwiftListPrefixFiles(EnvTo[id].SwiftCli, EnvTo[id].Cfg.ContainerPrefix)
+		if err != nil {
+			log.Println("Error can't connect swift for", EnvTo[id].Cfg.OsRegionName, err)
+			return
+		}
+		EnvTo[id].Files, err = swiftcli.SwiftListPrefixFiles(EnvTo[id].SwiftCli, EnvTo[id].Cfg.ContainerPrefix)
+		if err != nil {
+			log.Println("Error get files for", EnvTo[id].Cfg.OsRegionName, err)
+			return
+		}
 	}
 
 	// Start Job Worker
 	StartJobWorkers()
+	return
 }
 
 // helper function to look if path is already there

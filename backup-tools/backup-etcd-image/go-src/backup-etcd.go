@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -19,11 +18,9 @@ import (
 	"github.com/sapcc/containers/backup-tools/go-src/prometheus"
 	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
 	"github.com/sapcc/containers/backup-tools/go-src/utils"
-	"github.com/urfave/cli"
 )
 
 const (
-	appName               = "ETCD Backup"
 	layoutTimestamp       = "200601021504"
 	layoutTimestamp2      = "2006-01-02 15:04:05"
 	layoutTimestampBackup = "2006-01-02_1504"
@@ -44,7 +41,6 @@ var (
 	etcdBackupDir2    string
 	cmdArgsTemp       = []string{"backup"}
 	cfg               *configuration.EnvironmentStruct
-	t                 []byte
 	swiftCliConn      *swift.Connection
 )
 
@@ -85,29 +81,10 @@ func init() {
 }
 
 func main() {
-	app := cli.NewApp()
-	app.Name = appName
-	app.Version = versionString()
-	app.Authors = []cli.Author{
-		{
-			Name:  "Norbert Tretkowski",
-			Email: "norbert.tretkowski@sap.com",
-		},
-		{
-			Name:  "Josef Fröhle",
-			Email: "josef.froehle@sap.com",
-		},
-	}
-	app.Usage = "Create ETCD Backups"
-	app.Action = runServer
-	app.Run(os.Args)
-}
-
-func runServer(c *cli.Context) {
 	var err error
 	bp := prometheus.NewBackup()
 
-	swiftCliConn = swiftcli.SwiftConnection(
+	swiftCliConn, err = swiftcli.SwiftConnection(
 		cfg.OsAuthVersion,
 		cfg.OsAuthURL,
 		cfg.OsUsername,
@@ -155,7 +132,8 @@ func runServer(c *cli.Context) {
 				log.Println("TimeStampFile Error:", err)
 			}
 
-			t, err := ioutil.ReadAll(file)
+			var t []byte
+			t, err = ioutil.ReadAll(file)
 			file.Close()
 			if err != nil {
 				t = []byte("200001010101")
@@ -212,8 +190,4 @@ func runServer(c *cli.Context) {
 	}()
 
 	bp.ServerStart()
-}
-
-func versionString() string {
-	return fmt.Sprintf("0.0.1")
 }

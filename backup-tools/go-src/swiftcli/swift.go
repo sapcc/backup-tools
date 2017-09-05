@@ -15,10 +15,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ncw/swift"
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
 	"github.com/sapcc/containers/backup-tools/go-src/utils"
-
-	"github.com/ncw/swift"
 )
 
 // SwiftConnection connect swift
@@ -34,7 +33,7 @@ func SwiftConnection(
 	projectDomainName,
 	region,
 	contPrefix string,
-) *swift.Connection {
+) (*swift.Connection, error) {
 
 	vInt, _ := strconv.Atoi(version)
 	// Create a connection
@@ -52,10 +51,10 @@ func SwiftConnection(
 	// Authenticate
 	err := client.Authenticate()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &client
+	return &client, nil
 }
 
 // SwiftListFiles swift list all files in container
