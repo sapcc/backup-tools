@@ -17,6 +17,7 @@ import (
 	"github.com/sapcc/containers/backup-tools/go-src/utils"
 
 	"github.com/ncw/swift"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
@@ -157,7 +158,9 @@ func startRestoreInit(cc bool) error {
 	configuration.AuthRegion = os.Getenv("OS_REGION_NAME")
 	configuration.MysqlRootPassword = os.Getenv("MYSQL_ROOT_PASSWORD")
 
-	clientSwift = swiftcli.SwiftConnection(
+	var err error
+
+	clientSwift, err = swiftcli.SwiftConnection(
 		configuration.AuthVersion,
 		configuration.AuthEndpoint,
 		configuration.AuthUsername,
@@ -168,6 +171,11 @@ func startRestoreInit(cc bool) error {
 		configuration.AuthRegion,
 		configuration.ContainerPrefix,
 	)
+
+	if err != nil {
+		log.Println("Error can't connect swift for", configuration.AuthRegion, err)
+		return err
+	}
 
 	os.Mkdir(backupPath, 0777)
 	/*
@@ -273,7 +281,7 @@ func appQuest2(index int) error {
 
 	fmt.Println("Download: " + utils.List2[index])
 
-	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"), &backupPath)
+	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"), &backupPath, false)
 	if err != nil {
 		log.Fatal(err)
 	}

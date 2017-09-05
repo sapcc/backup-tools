@@ -2,6 +2,7 @@ SHELL       := /bin/sh
 REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/replication-tools
 VERSION     ?= v0.1.2
+DOCKERFILE  ?= Dockerfile.backup-replication-image
 
 ### Proxy Foo
 ifneq ($(http_proxy),)
@@ -15,7 +16,7 @@ endif
 
 .PHONY: build
 build:
-	docker build $(BUILD_ARGS) --squash -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
+	docker build $(BUILD_ARGS) --squash -f ../../$(DOCKERFILE) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm ../..
 	docker system prune -f
 
 .PHONY: push
