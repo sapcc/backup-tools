@@ -16,7 +16,7 @@ endif
 
 .PHONY: build
 build:
-	docker build $(BUILD_ARGS) --squash -f ../../$(DOCKERFILE) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm ../..
+	docker build $(BUILD_ARGS) -f ../../$(DOCKERFILE) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm ../..
 	docker system prune -f
 
 .PHONY: push
