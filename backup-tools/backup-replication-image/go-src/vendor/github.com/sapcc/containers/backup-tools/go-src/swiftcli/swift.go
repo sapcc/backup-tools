@@ -31,8 +31,7 @@ func SwiftConnection(
 	userDomainName,
 	projectName,
 	projectDomainName,
-	region,
-	contPrefix string,
+	region string,
 ) (*swift.Connection, error) {
 
 	vInt, _ := strconv.Atoi(version)

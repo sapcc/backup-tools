@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "expvar"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -19,14 +20,25 @@ import (
 const maxWorkers = 5 // normal 5; debug 2
 
 var (
+	backupContainer  = "db_backup"
 	initialized      bool
 	alreadyPrinted   int
 	currentFilesDone = 0
-	expiration       int64
-	backupDir        = "/backup/tmp"
+	expiration       string
 	EnvFrom          *Env
 	EnvTo            = make([]*Env, 2)
 )
+
+//FileState is used by GetFile() to describe the state of a file.
+type FileState struct {
+	Etag         string
+	LastModified string
+	//the following fields are only used in `sourceState`, not `targetState`
+	SkipTransfer bool
+	ContentType  string
+	DeleteAt     string
+	Mtime        string
+}
 
 type Env struct {
 	Cfg      configuration.EnvironmentStruct
@@ -43,68 +55,102 @@ type Job struct {
 }
 
 func doWork(id int, j Job) {
-	var dlErr, upErr error
-	var uploadDone bool
-	var dlFilePath string
-	lastDownload := false
-	from := j.EnvFrom
 
 	if DebugOutput {
 		log.Printf("Worker%d File %d/%d: started process file %s\n", id, j.FileNumber, j.FileAllCount, j.File)
 	}
-	for _, to := range j.EnvTo {
 
+	for _, to := range j.EnvTo {
 		// skip if file already on the replication region present
 		if stringInSlice(j.File, to.Files) {
-			if DebugOutput {
-				log.Printf("Worker%d File %d/%d: Skip %s to %s\n", id, j.FileNumber, j.FileAllCount, j.File, to.Cfg.OsRegionName)
-			}
 			continue
 		}
 
-		// Download only file if not already done
-		if !lastDownload {
-			if DebugOutput {
-				log.Printf("Worker%d File %d/%d: Download File: %s from %s\n", id, j.FileNumber, j.FileAllCount, j.File, j.EnvFrom.Cfg.OsRegionName)
+		//query the file metadata at the target
+		_, headers, err := to.SwiftCli.Object(
+			backupContainer,
+			j.File,
+		)
+		if err != nil {
+			if err == swift.ObjectNotFound {
+				headers = swift.Headers{}
+			} else {
+				//log all other errors and skip the file (we don't want to waste
+				//bandwidth downloading stuff if there is reasonable doubt that we will
+				//not be able to upload it to Swift)
+				log.Printf("Worker%d File %d/%d: skipping target %s %s/%s: HEAD failed: %s",
+					id, j.FileNumber, j.FileAllCount, j.EnvFrom.Cfg.OsRegionName, backupContainer, j.File,
+					err.Error(),
+				)
+				return
 			}
-			dlFilePath, dlErr = swiftcli.SwiftDownloadFile(from.SwiftCli, j.File, &backupDir, true)
-			if dlErr != nil {
-				PromGauge.SetError()
-				log.Printf("Worker%d File %d/%d (%s): Download File Error: %s\n", id, j.FileNumber, j.FileAllCount, j.File, dlErr)
-				// GoToEndWhileDownloadError used for exit the replication for error while downloading the file
-				goto GoToEndWhileDownloadError
-				break
-			}
-			lastDownload = true
 		}
 
-		// Upload file if no error before was triggered, and the dlFilePath is longer then 0
-		if dlErr == nil && len(dlFilePath) > 0 {
-			fakeName := strings.TrimPrefix(dlFilePath, backupDir)
-			if DebugOutput {
-				log.Printf("Worker%d File %d/%d: Upload File: %s to %s\n", id, j.FileNumber, j.FileAllCount, fakeName, to.Cfg.OsRegionName)
-			}
-			uploadDone, upErr = swiftcli.SwiftUploadFile(to.SwiftCli, dlFilePath, &expiration, &fakeName)
-			if upErr != nil || !uploadDone {
-				PromGauge.SetError()
-				log.Printf("Worker%d File %d/%d (%s): Upload File Error: %s\n", id, j.FileNumber, j.FileAllCount, j.File, upErr)
-			}
+		//retrieve object from source, taking advantage of Etag and Last-Modified where possible
+		metadata := headers.ObjectMetadata()
+		targetState := FileState{
+			Etag:         metadata["source-etag"],
+			LastModified: metadata["source-last-modified"],
 		}
+		body, sourceState, err := GetFile(&j, j.File, targetState)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		if body != nil {
+			defer body.Close()
+		}
+		if sourceState.SkipTransfer { // 304 Not Modified
+			return
+		}
+
+		//store some headers from the source to later identify whether this
+		//resource has changed
+		metadata = make(swift.Metadata)
+		if sourceState.Etag != "" {
+			metadata["source-etag"] = sourceState.Etag
+		}
+		if sourceState.LastModified != "" {
+			metadata["source-last-modified"] = sourceState.LastModified
+		}
+		if sourceState.Mtime != "" {
+			metadata["source-mtime"] = sourceState.Mtime
+		}
+
+		newHeaders := metadata.ObjectHeaders()
+		if sourceState.DeleteAt != "" {
+			newHeaders["X-Delete-After"] = "864000"
+		}
+		//upload file to target
+		_, err = to.SwiftCli.ObjectPut(
+			backupContainer,
+			j.File,
+			body,
+			false, "",
+			sourceState.ContentType,
+			newHeaders,
+		)
+		if err != nil {
+			log.Printf("Worker%d File %d/%d: PUT %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
+
+			//delete potentially incomplete upload
+			err := to.SwiftCli.ObjectDelete(
+				backupContainer,
+				j.File,
+			)
+			if err != nil {
+				log.Printf("Worker%d File %d/%d: DELETE %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
+			}
+			return
+		}
+
 	}
-
-	// GoToEndWhileDownloadError used for exit the replication for error while downloading the file
-GoToEndWhileDownloadError:
-
-	os.Remove(dlFilePath)
-
-	currentFilesDone += 1
-
-	PromGauge.CurrentFile(currentFilesDone)
-
 	if DebugOutput {
 		log.Printf("Worker%d File %d/%d: completed %s\n", id, j.FileNumber, j.FileAllCount, j.File)
 	}
 
+	currentFilesDone += 1
+	PromGauge.CurrentFile(currentFilesDone)
 	num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
 
 	if num > alreadyPrinted || num == alreadyPrinted {
@@ -171,8 +217,6 @@ func StartJobWorkers() {
 	// wait for workers to complete
 	wg.Wait()
 
-	os.RemoveAll(backupDir)
-
 	log.Printf("End replication task in %g seconds\n", time.Since(startTime).Seconds())
 }
 
@@ -186,20 +230,10 @@ func LoadAndStartJobs() {
 		// Set all to false for a new loop as default
 		alreadyPrinted = 0
 
-		var tmpExpireInt int
-		tmpExpire := os.Getenv("BACKUP_EXPIRE_AFTER")
-		if tmpExpire == "" {
-			expiration = 864000
-		} else {
-			tmpExpireInt, err = strconv.Atoi(tmpExpire)
-			if err == nil {
-				expiration = int64(tmpExpireInt)
-			} else {
-				expiration = 864000
-			}
+		expiration := os.Getenv("BACKUP_EXPIRE_AFTER")
+		if expiration == "" {
+			expiration = "864000"
 		}
-
-		os.MkdirAll(backupDir, 0777)
 
 		EnvFrom = &Env{Cfg: cfg.From}
 		EnvFrom.Cfg.ContainerPrefix = EnvFrom.Cfg.OsRegionName
@@ -211,8 +245,7 @@ func LoadAndStartJobs() {
 			EnvFrom.Cfg.OsUserDomainName,
 			EnvFrom.Cfg.OsProjectName,
 			EnvFrom.Cfg.OsProjectDomainName,
-			EnvFrom.Cfg.OsRegionName,
-			EnvFrom.Cfg.ContainerPrefix)
+			EnvFrom.Cfg.OsRegionName)
 		if err != nil {
 			log.Println("Error can't connect swift for", EnvFrom.Cfg.OsRegionName, err)
 			return
@@ -230,8 +263,7 @@ func LoadAndStartJobs() {
 				EnvTo[id].Cfg.OsUserDomainName,
 				EnvTo[id].Cfg.OsProjectName,
 				EnvTo[id].Cfg.OsProjectDomainName,
-				EnvTo[id].Cfg.OsRegionName,
-				EnvTo[id].Cfg.ContainerPrefix)
+				EnvTo[id].Cfg.OsRegionName)
 			if err != nil {
 				log.Println("Error can't connect swift for", EnvTo[id].Cfg.OsRegionName, err)
 				return
@@ -259,6 +291,33 @@ func LoadAndStartJobs() {
 	// Start Job Worker
 	StartJobWorkers()
 	return
+}
+
+// GetFile is the function with that we get the content information to skip this file or an error
+func GetFile(job *Job, filePath string, targetState FileState) (io.ReadCloser, FileState, error) {
+	reqHeaders := make(swift.Headers)
+	if targetState.Etag != "" {
+		reqHeaders["If-None-Match"] = targetState.Etag
+	}
+	if targetState.LastModified != "" {
+		reqHeaders["If-Modified-Since"] = targetState.LastModified
+	}
+
+	body, respHeaders, err := job.EnvFrom.SwiftCli.ObjectOpen(backupContainer, filePath, false, reqHeaders)
+	switch err {
+	case nil:
+		return body, FileState{
+			Etag:         respHeaders["Etag"],
+			LastModified: respHeaders["Last-Modified"],
+			ContentType:  respHeaders["Content-Type"],
+			DeleteAt:     respHeaders["X-Delete-At"],
+			Mtime:        respHeaders["X-Object-Meta-Mtime"],
+		}, nil
+	case swift.NotModified:
+		return nil, FileState{SkipTransfer: true}, nil
+	default:
+		return nil, FileState{}, err
+	}
 }
 
 // helper function to look if path is already there

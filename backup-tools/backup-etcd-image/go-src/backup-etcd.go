@@ -92,8 +92,7 @@ func main() {
 		cfg.OsUserDomainName,
 		cfg.OsProjectName,
 		cfg.OsProjectDomainName,
-		cfg.OsRegionName,
-		cfg.ContainerPrefix)
+		cfg.OsRegionName)
 
 	if _, err = os.Stat(tmpTimestampFile); os.IsNotExist(err) {
 		_, err = swiftcli.SwiftDownloadFile(swiftCliConn, cfg.ContainerPrefix+tmpTimestampFile, &tmpDir, false)

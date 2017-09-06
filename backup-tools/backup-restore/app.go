@@ -168,9 +168,7 @@ func startRestoreInit(cc bool) error {
 		configuration.AuthUserDomainName,
 		configuration.AuthProjectName,
 		configuration.AuthProjectDomainName,
-		configuration.AuthRegion,
-		configuration.ContainerPrefix,
-	)
+		configuration.AuthRegion)
 
 	if err != nil {
 		log.Println("Error can't connect swift for", configuration.AuthRegion, err)
