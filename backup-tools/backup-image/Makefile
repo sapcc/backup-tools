@@ -2,6 +2,7 @@ SHELL       := /bin/sh
 REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/backup-tools
 VERSION     ?= v0.1.2
+DOCKERFILE  ?= Dockerfile.backup-image
 
 ### Proxy Foo
 ifneq ($(http_proxy),)
@@ -15,11 +16,8 @@ endif
 
 .PHONY: build
 build:
-	docker build $(BUILD_ARGS) -t go-build:latest --rm go-src/
-	docker run go-build tar -cvf - /usr/local/sbin/backup-run > files/backup-run.tar
-	docker build $(BUILD_ARGS) -t go-build:latest --rm ../backup-restore
-	docker run go-build tar -cvf - /usr/local/sbin/backup-restore > files/backup-restore.tar
-	docker build $(BUILD_ARGS) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
+	docker build $(BUILD_ARGS) -f ../../$(DOCKERFILE) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm ../..
+	docker system prune -f
 
 .PHONY: push
 push:
