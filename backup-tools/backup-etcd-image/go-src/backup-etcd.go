@@ -26,7 +26,7 @@ const (
 	layoutTimestampBackup = "2006-01-02_1504"
 	tmpTimestampFile      = "/tmp/last_backup_timestamp"
 	etcdDir               = "/var/lib/etcd2"
-	cmd                   = "/etcdctl"
+	cmd                   = "/bin/etcdctl"
 	interval              = time.Duration(60) * time.Second
 )
 
