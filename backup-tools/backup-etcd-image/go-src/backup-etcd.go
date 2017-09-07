@@ -93,6 +93,11 @@ func main() {
 		cfg.OsProjectName,
 		cfg.OsProjectDomainName,
 		cfg.OsRegionName)
+	if err != nil {
+		log.Println("Error can't connect swift for:", err.Error())
+		os.Exit(1)
+		return
+	}
 
 	if _, err = os.Stat(tmpTimestampFile); os.IsNotExist(err) {
 		_, err = swiftcli.SwiftDownloadFile(swiftCliConn, cfg.ContainerPrefix+tmpTimestampFile, &tmpDir, false)
