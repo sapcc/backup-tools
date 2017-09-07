@@ -15,5 +15,6 @@ COPY --from=etcdMaster /etcd /bin/etcd
 COPY --from=etcdMaster /etcdctl /bin/etcdctl
 COPY --from=gobuilder /go/bin/backup-etcd /bin/backup-etcd
 COPY --from=gobuilder /backup/env /backup/env
+RUN apk add --no-cache ca-certificates && update-ca-certificates
 VOLUME ["/backup"]
 ENTRYPOINT ["/bin/backup-etcd"]
