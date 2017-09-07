@@ -1,5 +1,5 @@
 SHELL       := /bin/sh
-REGISTRY    ?=
+REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/backup-tools
 VERSION     ?= v0.1.2
 
@@ -19,8 +19,8 @@ build:
 	docker run go-build tar -cvf - /usr/local/sbin/backup-run > files/backup-run.tar
 	docker build $(BUILD_ARGS) -t go-build:latest --rm ../backup-restore
 	docker run go-build tar -cvf - /usr/local/sbin/backup-restore > files/backup-restore.tar
-	docker build $(BUILD_ARGS) -t $(REGISTRY)/$(IMAGE):$(VERSION) --rm .
+	docker build $(BUILD_ARGS) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm .
 
 .PHONY: push
 push:
-	docker push $(REGISTRY)/$(IMAGE):$(VERSION)
+	docker push $(REGISTRY)$(IMAGE):$(VERSION)

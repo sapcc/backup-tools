@@ -14,7 +14,6 @@ import (
 
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
 	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
-	"github.com/sapcc/containers/backup-tools/go-src/underscore"
 	"github.com/sapcc/containers/backup-tools/go-src/utils"
 
 	"github.com/ncw/swift"
@@ -43,15 +42,15 @@ func startCrossregionInit() error {
 
 	group := configuration.EnvironmentStruct{
 		ContainerPrefix:      strings.Join([]string{os.Getenv("BACKUP_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/"),
-		OsAuthURL:            os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthURL"))),
-		OsAuthVersion:        os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthVersion"))),
-		OsIdentityAPIVersion: os.Getenv(strings.ToUpper(underscore.Underscore("OsIdentityAPIVersion"))),
-		OsUsername:           os.Getenv(strings.ToUpper(underscore.Underscore("OsUsername"))),
-		OsUserDomainName:     os.Getenv(strings.ToUpper(underscore.Underscore("OsUserDomainName"))),
-		OsProjectName:        os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectName"))),
-		OsProjectDomainName:  os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName"))),
-		OsRegionName:         os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName"))),
-		OsPassword:           os.Getenv(strings.ToUpper(underscore.Underscore("OsPassword"))),
+		OsAuthURL:            os.Getenv("OS_AUTH_URL"),
+		OsAuthVersion:        os.Getenv("OS_AUTH_VERSION"),
+		OsIdentityAPIVersion: os.Getenv("OS_IDENTITY_API_VERSION"),
+		OsUsername:           os.Getenv("OS_USERNAME"),
+		OsUserDomainName:     os.Getenv("OS_USER_DOMAIN_NAME"),
+		OsProjectName:        os.Getenv("OS_PROJECT_NAME"),
+		OsProjectDomainName:  os.Getenv("OS_PROJECT_DOMAIN_NAME"),
+		OsRegionName:         os.Getenv("OS_REGION_NAME"),
+		OsPassword:           os.Getenv("OS_PASSWORD"),
 	}
 
 	data, err := json.Marshal(group)
@@ -62,7 +61,7 @@ func startCrossregionInit() error {
 	str := b64.StdEncoding.WithPadding(-1).EncodeToString(data)
 	fmt.Println(str)
 
-	//fmt.Println(strings.ToUpper(underscore.Underscore("OsAuthURL")))
+	//fmt.Println("OS_AUTH_URL")
 
 	return nil
 }
@@ -111,55 +110,57 @@ func startRestoreInit(cc bool) error {
 		// fmt.Printf("%+v", jsonReturn)
 
 		if jsonReturn.ContainerPrefix != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("ContainerPrefix")), jsonReturn.ContainerPrefix)
+			os.Setenv("CONTAINER_PREFIX", jsonReturn.ContainerPrefix)
 		}
 		if jsonReturn.OsAuthURL != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsAuthURL")), jsonReturn.OsAuthURL)
+			os.Setenv("OS_AUTH_URL", jsonReturn.OsAuthURL)
 		}
 		if jsonReturn.OsAuthVersion != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsAuthVersion")), jsonReturn.OsAuthVersion)
+			os.Setenv("OS_AUTH_VERSION", jsonReturn.OsAuthVersion)
 		}
 		if jsonReturn.OsIdentityAPIVersion != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsIdentityAPIVersion")), jsonReturn.OsIdentityAPIVersion)
+			os.Setenv("OS_IDENTITY_API_VERSION", jsonReturn.OsIdentityAPIVersion)
 		}
 		if jsonReturn.OsUsername != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsUsername")), jsonReturn.OsUsername)
+			os.Setenv("OS_USERNAME", jsonReturn.OsUsername)
 		}
 		if jsonReturn.OsUserDomainName != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsUserDomainName")), jsonReturn.OsUserDomainName)
+			os.Setenv("OS_USER_DOMAIN_NAME", jsonReturn.OsUserDomainName)
 		}
 		if jsonReturn.OsProjectName != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsProjectName")), jsonReturn.OsProjectName)
+			os.Setenv("OS_PROJECT_NAME", jsonReturn.OsProjectName)
 		}
 		if jsonReturn.OsProjectDomainName != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName")), jsonReturn.OsProjectDomainName)
+			os.Setenv("OS_PROJECT_DOMAIN_NAME", jsonReturn.OsProjectDomainName)
 		}
 		if jsonReturn.OsRegionName != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsRegionName")), jsonReturn.OsRegionName)
+			os.Setenv("OS_REGION_NAME", jsonReturn.OsRegionName)
 		}
 		if jsonReturn.OsPassword != "" {
-			os.Setenv(strings.ToUpper(underscore.Underscore("OsPassword")), jsonReturn.OsPassword)
+			os.Setenv("OS_PASSWORD", jsonReturn.OsPassword)
 		}
 
 	}
-	configuration.ContainerPrefix = os.Getenv(strings.ToUpper(underscore.Underscore("ContainerPrefix")))
+	configuration.ContainerPrefix = os.Getenv("CONTAINER_PREFIX")
 
 	if configuration.ContainerPrefix == "" {
-		configuration.ContainerPrefix = strings.Join([]string{os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName"))), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
-		os.Setenv(strings.ToUpper(underscore.Underscore("ContainerPrefix")), configuration.ContainerPrefix)
+		configuration.ContainerPrefix = strings.Join([]string{os.Getenv("OS_REGION_NAME"), os.Getenv("MY_POD_NAMESPACE"), os.Getenv("MY_POD_NAME")}, "/")
+		os.Setenv("CONTAINER_PREFIX", configuration.ContainerPrefix)
 	}
 
-	configuration.AuthVersion = os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthVersion")))
-	configuration.AuthEndpoint = os.Getenv(strings.ToUpper(underscore.Underscore("OsAuthURL")))
-	configuration.AuthUsername = os.Getenv(strings.ToUpper(underscore.Underscore("OsUsername")))
-	configuration.AuthPassword = os.Getenv(strings.ToUpper(underscore.Underscore("OsPassword")))
-	configuration.AuthUserDomainName = os.Getenv(strings.ToUpper(underscore.Underscore("OsUserDomainName")))
-	configuration.AuthProjectName = os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectName")))
-	configuration.AuthProjectDomainName = os.Getenv(strings.ToUpper(underscore.Underscore("OsProjectDomainName")))
-	configuration.AuthRegion = os.Getenv(strings.ToUpper(underscore.Underscore("OsRegionName")))
-	configuration.MysqlRootPassword = os.Getenv(strings.ToUpper(underscore.Underscore("MysqlRootPassword")))
+	configuration.AuthVersion = os.Getenv("OS_AUTH_VERSION")
+	configuration.AuthEndpoint = os.Getenv("OS_AUTH_URL")
+	configuration.AuthUsername = os.Getenv("OS_USERNAME")
+	configuration.AuthPassword = os.Getenv("OS_PASSWORD")
+	configuration.AuthUserDomainName = os.Getenv("OS_USER_DOMAIN_NAME")
+	configuration.AuthProjectName = os.Getenv("OS_PROJECT_NAME")
+	configuration.AuthProjectDomainName = os.Getenv("OS_PROJECT_DOMAIN_NAME")
+	configuration.AuthRegion = os.Getenv("OS_REGION_NAME")
+	configuration.MysqlRootPassword = os.Getenv("MYSQL_ROOT_PASSWORD")
 
-	clientSwift = swiftcli.SwiftConnection(
+	var err error
+
+	clientSwift, err = swiftcli.SwiftConnection(
 		configuration.AuthVersion,
 		configuration.AuthEndpoint,
 		configuration.AuthUsername,
@@ -167,9 +168,12 @@ func startRestoreInit(cc bool) error {
 		configuration.AuthUserDomainName,
 		configuration.AuthProjectName,
 		configuration.AuthProjectDomainName,
-		configuration.AuthRegion,
-		configuration.ContainerPrefix,
-	)
+		configuration.AuthRegion)
+
+	if err != nil {
+		log.Println("Error can't connect swift for", configuration.AuthRegion, err)
+		return err
+	}
 
 	os.Mkdir(backupPath, 0777)
 	/*
@@ -275,7 +279,7 @@ func appQuest2(index int) error {
 
 	fmt.Println("Download: " + utils.List2[index])
 
-	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"), &backupPath)
+	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"), &backupPath, false)
 	if err != nil {
 		log.Fatal(err)
 	}
