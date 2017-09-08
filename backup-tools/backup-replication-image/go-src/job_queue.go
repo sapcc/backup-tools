@@ -81,6 +81,7 @@ func doWork(id int, j Job) {
 					id, j.FileNumber, j.FileAllCount, j.EnvFrom.Cfg.OsRegionName, backupContainer, j.File,
 					err.Error(),
 				)
+				PromGauge.SetError()
 				return
 			}
 		}
@@ -94,6 +95,7 @@ func doWork(id int, j Job) {
 		body, sourceState, err := GetFile(&j, j.File, targetState)
 		if err != nil {
 			log.Println(err.Error())
+			PromGauge.SetError()
 			return
 		}
 		if body != nil {
@@ -131,6 +133,7 @@ func doWork(id int, j Job) {
 		)
 		if err != nil {
 			log.Printf("Worker%d File %d/%d: PUT %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
+			PromGauge.SetError()
 
 			//delete potentially incomplete upload
 			err := to.SwiftCli.ObjectDelete(
@@ -244,6 +247,7 @@ func LoadAndStartJobs() {
 			EnvFrom.Cfg.OsRegionName)
 		if err != nil {
 			log.Println("Error can't connect swift for", EnvFrom.Cfg.OsRegionName, err)
+			PromGauge.SetError()
 			return
 		}
 
@@ -262,6 +266,7 @@ func LoadAndStartJobs() {
 				EnvTo[id].Cfg.OsRegionName)
 			if err != nil {
 				log.Println("Error can't connect swift for", EnvTo[id].Cfg.OsRegionName, err)
+				PromGauge.SetError()
 				return
 			}
 		}
@@ -270,18 +275,19 @@ func LoadAndStartJobs() {
 	}
 
 	EnvFrom.Files, err = swiftcli.SwiftListPrefixFiles(EnvFrom.SwiftCli, EnvFrom.Cfg.ContainerPrefix)
+	if err != nil {
+		log.Println("Error fet files for", EnvFrom.Cfg.OsRegionName, err)
+		PromGauge.SetError()
+		return
+	}
 
 	for id := range EnvTo {
 		EnvTo[id].Files, err = swiftcli.SwiftListPrefixFiles(EnvTo[id].SwiftCli, EnvTo[id].Cfg.ContainerPrefix)
 		if err != nil {
 			log.Println("Error get files for", EnvTo[id].Cfg.OsRegionName, err)
+			PromGauge.SetError()
 			return
 		}
-	}
-
-	if err != nil {
-		log.Println("Error fet files for", EnvFrom.Cfg.OsRegionName, err)
-		return
 	}
 
 	// Set all to false for a new loop as default
@@ -289,6 +295,9 @@ func LoadAndStartJobs() {
 
 	// Start Job Worker
 	StartJobWorkers()
+
+	// Set Success Prometheus
+	PromGauge.SetSuccess(nil)
 	return
 }
 
