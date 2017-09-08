@@ -226,9 +226,6 @@ func LoadAndStartJobs() {
 		// cfg used for the parsed YAML Configuration
 		cfg := configuration.YAMLReplication("/backup/env/config.yml")
 
-		// Set all to false for a new loop as default
-		alreadyPrinted = 0
-
 		expiration := os.Getenv("BACKUP_EXPIRE_AFTER")
 		if expiration == "" {
 			expiration = "864000"
@@ -286,6 +283,9 @@ func LoadAndStartJobs() {
 		log.Println("Error fet files for", EnvFrom.Cfg.OsRegionName, err)
 		return
 	}
+
+	// Set all to false for a new loop as default
+	alreadyPrinted = 0
 
 	// Start Job Worker
 	StartJobWorkers()
