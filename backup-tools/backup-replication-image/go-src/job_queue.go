@@ -19,13 +19,14 @@ import (
 const maxWorkers = 5 // normal 5; debug 2
 
 var (
-	backupContainer  = "db_backup"
-	initialized      bool
-	alreadyPrinted   int
-	currentFilesDone = 0
-	expiration       string
-	EnvFrom          *Env
-	EnvTo            = make([]*Env, 2)
+	backupContainer    = "db_backup"
+	initialized        bool
+	alreadyPrinted     int
+	currentFilesDone   = 0
+	expiration         string
+	EnvFrom            *Env
+	EnvTo              = make([]*Env, 2)
+	lockAlreadyPrinted = sync.RWMutex{}
 )
 
 //FileState is used by GetFile() to describe the state of a file.
@@ -156,7 +157,9 @@ func doWork(id int, j Job) {
 	num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
 
 	if num > alreadyPrinted || num == alreadyPrinted {
+		lockAlreadyPrinted.RLock()
 		alreadyPrinted += 5
+		lockAlreadyPrinted.RUnlock()
 		log.Printf("%d%% of replication done\n", num)
 	}
 
@@ -291,7 +294,9 @@ func LoadAndStartJobs() {
 	}
 
 	// Set all to false for a new loop as default
+	lockAlreadyPrinted.RLock()
 	alreadyPrinted = 0
+	lockAlreadyPrinted.RUnlock()
 
 	// Start Job Worker
 	StartJobWorkers()
