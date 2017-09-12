@@ -18,6 +18,7 @@ func main() {
 
 	go func() {
 		for {
+			PromGauge.Beginn()
 			LoadAndStartJobs()
 			PromGauge.Finish()
 			time.Sleep(7200 * time.Second)
