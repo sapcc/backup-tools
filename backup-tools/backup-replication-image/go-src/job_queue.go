@@ -228,6 +228,7 @@ func doWork(id int, j Job) {
 
 func StartJobWorkers() {
 
+	currentFilesDone = 0
 	var fileCounter = 0
 	var countAllFiles = 0
 	var startTime = time.Now()
