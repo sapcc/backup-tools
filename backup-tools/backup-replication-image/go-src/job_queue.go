@@ -87,7 +87,6 @@ func doWork(id int, j Job) {
 						id, j.FileNumber, j.FileAllCount, j.EnvFrom.Cfg.OsRegionName, backupContainer, j.File,
 						err.Error(),
 					)
-					PromGauge.SetError()
 					return
 				}
 			}
@@ -101,7 +100,7 @@ func doWork(id int, j Job) {
 			body, sourceState, err := GetFile(&j, j.File, targetState)
 			if err != nil {
 				log.Println(err.Error())
-				PromGauge.SetError()
+
 				return
 			}
 			if body != nil {
@@ -139,7 +138,6 @@ func doWork(id int, j Job) {
 			)
 			if err != nil {
 				log.Printf("Worker%d File %d/%d: PUT %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
-				PromGauge.SetError()
 
 				//delete potentially incomplete upload
 				err := to.SwiftCli.ObjectDelete(
@@ -156,7 +154,8 @@ func doWork(id int, j Job) {
 
 		// error for retry
 		if err != nil {
-			log.Println(err)
+			log.Printf("Worker%d File %d/%d: PUT %s %s/%s with retry failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
+			PromGauge.SetError()
 			return
 		}
 	}
