@@ -85,7 +85,7 @@ func doWork(id int, j Job) {
 						id, j.FileNumber, j.FileAllCount, j.EnvFrom.Cfg.OsRegionName, backupContainer, j.File,
 						err.Error(),
 					)
-					return
+					return nil
 				}
 			}
 
@@ -98,14 +98,13 @@ func doWork(id int, j Job) {
 			body, sourceState, err := GetFile(&j, j.File, targetState)
 			if err != nil {
 				log.Println(err.Error())
-
-				return
+				return err
 			}
 			if body != nil {
 				defer body.Close()
 			}
 			if sourceState.SkipTransfer { // 304 Not Modified
-				return
+				return nil
 			}
 
 			//store some headers from the source to later identify whether this
@@ -145,9 +144,9 @@ func doWork(id int, j Job) {
 				if err != nil {
 					log.Printf("Worker%d File %d/%d: DELETE %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
 				}
-				return
+				return err
 			}
-			return
+			return nil
 		})
 
 		// error for retry
