@@ -10,6 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"fmt"
+	"net/http"
+
 	"github.com/ncw/swift"
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
 	"github.com/sapcc/containers/backup-tools/go-src/swiftcli"
@@ -21,7 +24,7 @@ const maxWorkers = 5 // normal 5; debug 2
 var (
 	backupContainer    = "db_backup"
 	initialized        bool
-	alreadyPrinted     int
+	alreadyPrinted     *int
 	currentFilesDone   = 0
 	expiration         string
 	EnvFrom            *Env
@@ -66,88 +69,98 @@ func doWork(id int, j Job) {
 			continue
 		}
 
-		//query the file metadata at the target
-		_, headers, err := to.SwiftCli.Object(
-			backupContainer,
-			j.File,
-		)
-		if err != nil {
-			if err == swift.ObjectNotFound {
-				headers = swift.Headers{}
-			} else {
-				//log all other errors and skip the file (we don't want to waste
-				//bandwidth downloading stuff if there is reasonable doubt that we will
-				//not be able to upload it to Swift)
-				log.Printf("Worker%d File %d/%d: skipping target %s %s/%s: HEAD failed: %s",
-					id, j.FileNumber, j.FileAllCount, j.EnvFrom.Cfg.OsRegionName, backupContainer, j.File,
-					err.Error(),
-				)
-				PromGauge.SetError()
-				return
-			}
-		}
+		err := retry(5, 2*time.Second, func() (err error) {
 
-		//retrieve object from source, taking advantage of Etag and Last-Modified where possible
-		metadata := headers.ObjectMetadata()
-		targetState := FileState{
-			Etag:         metadata["source-etag"],
-			LastModified: metadata["source-last-modified"],
-		}
-		body, sourceState, err := GetFile(&j, j.File, targetState)
-		if err != nil {
-			log.Println(err.Error())
-			PromGauge.SetError()
-			return
-		}
-		if body != nil {
-			defer body.Close()
-		}
-		if sourceState.SkipTransfer { // 304 Not Modified
-			return
-		}
-
-		//store some headers from the source to later identify whether this
-		//resource has changed
-		metadata = make(swift.Metadata)
-		if sourceState.Etag != "" {
-			metadata["source-etag"] = sourceState.Etag
-		}
-		if sourceState.LastModified != "" {
-			metadata["source-last-modified"] = sourceState.LastModified
-		}
-		if sourceState.Mtime != "" {
-			metadata["source-mtime"] = sourceState.Mtime
-		}
-
-		newHeaders := metadata.ObjectHeaders()
-		if sourceState.DeleteAt != "" {
-			newHeaders["X-Delete-After"] = "864000"
-		}
-		//upload file to target
-		_, err = to.SwiftCli.ObjectPut(
-			backupContainer,
-			j.File,
-			body,
-			false, "",
-			sourceState.ContentType,
-			newHeaders,
-		)
-		if err != nil {
-			log.Printf("Worker%d File %d/%d: PUT %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
-			PromGauge.SetError()
-
-			//delete potentially incomplete upload
-			err := to.SwiftCli.ObjectDelete(
+			//query the file metadata at the target
+			_, headers, err := to.SwiftCli.Object(
 				backupContainer,
 				j.File,
 			)
 			if err != nil {
-				log.Printf("Worker%d File %d/%d: DELETE %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
+				if err == swift.ObjectNotFound {
+					headers = swift.Headers{}
+				} else {
+					//log all other errors and skip the file (we don't want to waste
+					//bandwidth downloading stuff if there is reasonable doubt that we will
+					//not be able to upload it to Swift)
+					log.Printf("Worker%d File %d/%d: skipping target %s %s/%s: HEAD failed: %s",
+						id, j.FileNumber, j.FileAllCount, j.EnvFrom.Cfg.OsRegionName, backupContainer, j.File,
+						err.Error(),
+					)
+					PromGauge.SetError()
+					return
+				}
+			}
+
+			//retrieve object from source, taking advantage of Etag and Last-Modified where possible
+			metadata := headers.ObjectMetadata()
+			targetState := FileState{
+				Etag:         metadata["source-etag"],
+				LastModified: metadata["source-last-modified"],
+			}
+			body, sourceState, err := GetFile(&j, j.File, targetState)
+			if err != nil {
+				log.Println(err.Error())
+				PromGauge.SetError()
+				return
+			}
+			if body != nil {
+				defer body.Close()
+			}
+			if sourceState.SkipTransfer { // 304 Not Modified
+				return
+			}
+
+			//store some headers from the source to later identify whether this
+			//resource has changed
+			metadata = make(swift.Metadata)
+			if sourceState.Etag != "" {
+				metadata["source-etag"] = sourceState.Etag
+			}
+			if sourceState.LastModified != "" {
+				metadata["source-last-modified"] = sourceState.LastModified
+			}
+			if sourceState.Mtime != "" {
+				metadata["source-mtime"] = sourceState.Mtime
+			}
+
+			newHeaders := metadata.ObjectHeaders()
+			if sourceState.DeleteAt != "" {
+				newHeaders["X-Delete-After"] = "864000"
+			}
+			//upload file to target
+			_, err = to.SwiftCli.ObjectPut(
+				backupContainer,
+				j.File,
+				body,
+				false, "",
+				sourceState.ContentType,
+				newHeaders,
+			)
+			if err != nil {
+				log.Printf("Worker%d File %d/%d: PUT %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
+				PromGauge.SetError()
+
+				//delete potentially incomplete upload
+				err := to.SwiftCli.ObjectDelete(
+					backupContainer,
+					j.File,
+				)
+				if err != nil {
+					log.Printf("Worker%d File %d/%d: DELETE %s %s/%s failed: %s", id, j.FileNumber, j.FileAllCount, to.Cfg.OsRegionName, backupContainer, j.File, err.Error())
+				}
+				return
 			}
 			return
-		}
+		})
 
+		// error for retry
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
+
 	if DebugOutput {
 		log.Printf("Worker%d File %d/%d: completed %s\n", id, j.FileNumber, j.FileAllCount, j.File)
 	}
@@ -155,10 +168,18 @@ func doWork(id int, j Job) {
 	currentFilesDone += 1
 	PromGauge.CurrentFile(currentFilesDone)
 	num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
-
-	if num > alreadyPrinted || num == alreadyPrinted {
+	lockAlreadyPrinted.Lock()
+	if 100 <= *alreadyPrinted {
+		lockAlreadyPrinted.Unlock()
 		lockAlreadyPrinted.RLock()
-		alreadyPrinted += 5
+		*alreadyPrinted = 0
+		lockAlreadyPrinted.RUnlock()
+	}
+	lockAlreadyPrinted.Lock()
+	if 100 <= *alreadyPrinted {
+		lockAlreadyPrinted.Unlock()
+		lockAlreadyPrinted.RLock()
+		*alreadyPrinted += 5
 		lockAlreadyPrinted.RUnlock()
 		log.Printf("%d%% of replication done\n", num)
 	}
@@ -232,7 +253,7 @@ func LoadAndStartJobs() {
 		// cfg used for the parsed YAML Configuration
 		cfg := configuration.YAMLReplication("/backup/env/config.yml")
 
-		expiration := os.Getenv("BACKUP_EXPIRE_AFTER")
+		expiration = os.Getenv("BACKUP_EXPIRE_AFTER")
 		if expiration == "" {
 			expiration = "864000"
 		}
@@ -295,7 +316,7 @@ func LoadAndStartJobs() {
 
 	// Set all to false for a new loop as default
 	lockAlreadyPrinted.RLock()
-	alreadyPrinted = 0
+	*alreadyPrinted = 0
 	lockAlreadyPrinted.RUnlock()
 
 	// Start Job Worker
@@ -362,4 +383,22 @@ func stringInAllSlice(a string, lists []*Env) bool {
 
 func Round(f float64) float64 {
 	return math.Floor(f + .5)
+}
+
+func retry(attempts int, sleep time.Duration, callback func() error) (err error) {
+	for i := 0; ; i++ {
+		err = callback()
+		if err == nil {
+			return
+		}
+
+		if i >= (attempts - 1) {
+			break
+		}
+
+		time.Sleep(sleep)
+
+		log.Println("retrying after error:", err)
+	}
+	return fmt.Errorf("after %d attempts, last error: %s", attempts, err)
 }
