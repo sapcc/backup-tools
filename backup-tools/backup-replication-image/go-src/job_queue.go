@@ -22,7 +22,7 @@ const maxWorkers = 5 // normal 5; debug 2
 var (
 	backupContainer    = "db_backup"
 	initialized        bool
-	alreadyPrinted     *int
+	alreadyPrinted     int
 	currentFilesDone   = 0
 	expiration         string
 	EnvFrom            *Env
@@ -165,17 +165,17 @@ func doWork(id int, j Job) {
 	PromGauge.CurrentFile(currentFilesDone)
 	num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
 	lockAlreadyPrinted.Lock()
-	if 100 <= *alreadyPrinted {
+	if 100 <= alreadyPrinted {
 		lockAlreadyPrinted.Unlock()
 		lockAlreadyPrinted.RLock()
-		*alreadyPrinted = 0
+		alreadyPrinted = 0
 		lockAlreadyPrinted.RUnlock()
 	}
 	lockAlreadyPrinted.Lock()
-	if 100 <= *alreadyPrinted {
+	if 100 <= alreadyPrinted {
 		lockAlreadyPrinted.Unlock()
 		lockAlreadyPrinted.RLock()
-		*alreadyPrinted += 5
+		alreadyPrinted += 5
 		lockAlreadyPrinted.RUnlock()
 		log.Printf("%d%% of replication done\n", num)
 	}
@@ -312,7 +312,7 @@ func LoadAndStartJobs() {
 
 	// Set all to false for a new loop as default
 	lockAlreadyPrinted.RLock()
-	*alreadyPrinted = 0
+	alreadyPrinted = 0
 	lockAlreadyPrinted.RUnlock()
 
 	// Start Job Worker
