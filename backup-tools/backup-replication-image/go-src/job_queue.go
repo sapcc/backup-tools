@@ -43,12 +43,37 @@ func (c *SafePrinted) Inc() {
 	c.mux.Unlock()
 }
 
+// Set increments the counter by num (int).
+func (c *SafePrinted) Set(num int) {
+	c.mux.Lock()
+	// Lock so only one goroutine at a time can access the map c.v.
+	c.v += num
+	c.mux.Unlock()
+}
+
 // Reset resets the counter to 0.
 func (c *SafePrinted) Reset() {
 	c.mux.Lock()
 	// Lock so only one goroutine at a time can access the map c.v.
 	c.v = 0
 	c.mux.Unlock()
+}
+
+// CheckReset resets the counter to 0 if bigger or equal 100.
+func (c *SafePrinted) CheckReset() {
+	if c.Value() > 100 {
+		c.Reset()
+	}
+}
+
+// CheckInt checks if the counter is bigger then num (int) and return a bool.
+// Also it set to the current num if it is bigger
+func (c *SafePrinted) CheckInt(num int) bool {
+	if c.Value() < num {
+		c.Set(num)
+		return true
+	}
+	return false
 }
 
 // Value returns the current value of the counter.
@@ -194,12 +219,8 @@ func doWork(id int, j Job) {
 	PromGauge.CurrentFile(currentFilesDone)
 	num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
 
-	if 100 <= alreadyPrinted.Value() {
-		alreadyPrinted.Reset()
-	}
-
-	if num > alreadyPrinted.Value() {
-		alreadyPrinted.Inc()
+	alreadyPrinted.CheckReset()
+	if alreadyPrinted.CheckInt(num) {
 		log.Printf("%d%% of replication done\n", num)
 	}
 
