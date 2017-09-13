@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "expvar"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -9,9 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"fmt"
-	"net/http"
 
 	"github.com/ncw/swift"
 	"github.com/sapcc/containers/backup-tools/go-src/configuration"
