@@ -20,15 +20,44 @@ import (
 const maxWorkers = 5 // normal 5; debug 2
 
 var (
-	backupContainer    = "db_backup"
-	initialized        bool
-	alreadyPrinted     int
-	currentFilesDone   = 0
-	expiration         string
-	EnvFrom            *Env
-	EnvTo              = make([]*Env, 2)
-	lockAlreadyPrinted = sync.RWMutex{}
+	backupContainer  = "db_backup"
+	initialized      bool
+	alreadyPrinted   SafePrinted
+	currentFilesDone = 0
+	expiration       string
+	EnvFrom          *Env
+	EnvTo            = make([]*Env, 2)
 )
+
+// SafeCounter is safe to use concurrently.
+type SafePrinted struct {
+	v   int
+	mux sync.Mutex
+}
+
+// Inc increments the counter by 5.
+func (c *SafePrinted) Inc() {
+	c.mux.Lock()
+	// Lock so only one goroutine at a time can access the map c.v.
+	c.v += 5
+	c.mux.Unlock()
+}
+
+// Reset resets the counter to 0.
+func (c *SafePrinted) Reset() {
+	c.mux.Lock()
+	// Lock so only one goroutine at a time can access the map c.v.
+	c.v = 0
+	c.mux.Unlock()
+}
+
+// Value returns the current value of the counter.
+func (c *SafePrinted) Value() int {
+	c.mux.Lock()
+	// Lock so only one goroutine at a time can access the map c.v.
+	defer c.mux.Unlock()
+	return c.v
+}
 
 //FileState is used by GetFile() to describe the state of a file.
 type FileState struct {
@@ -164,19 +193,13 @@ func doWork(id int, j Job) {
 	currentFilesDone += 1
 	PromGauge.CurrentFile(currentFilesDone)
 	num := int(Round((float64(currentFilesDone) / float64(j.FileAllCount)) * 100.0))
-	lockAlreadyPrinted.Lock()
-	if 100 <= alreadyPrinted {
-		lockAlreadyPrinted.Unlock()
-		lockAlreadyPrinted.RLock()
-		alreadyPrinted = 0
-		lockAlreadyPrinted.RUnlock()
+
+	if 100 <= alreadyPrinted.Value() {
+		alreadyPrinted.Reset()
 	}
-	lockAlreadyPrinted.Lock()
-	if 100 <= alreadyPrinted {
-		lockAlreadyPrinted.Unlock()
-		lockAlreadyPrinted.RLock()
-		alreadyPrinted += 5
-		lockAlreadyPrinted.RUnlock()
+
+	if num > alreadyPrinted.Value() {
+		alreadyPrinted.Inc()
 		log.Printf("%d%% of replication done\n", num)
 	}
 
@@ -311,9 +334,8 @@ func LoadAndStartJobs() {
 	}
 
 	// Set all to false for a new loop as default
-	lockAlreadyPrinted.RLock()
-	alreadyPrinted = 0
-	lockAlreadyPrinted.RUnlock()
+
+	alreadyPrinted.Reset()
 
 	// Start Job Worker
 	StartJobWorkers()
