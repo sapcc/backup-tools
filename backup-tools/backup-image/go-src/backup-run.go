@@ -48,7 +48,7 @@ func runServer(c *cli.Context) {
 
 			t, err := ioutil.ReadFile("/tmp/last_backup_timestamp")
 			if err != nil {
-				fmt.Print(err)
+				fmt.Println(err)
 			}
 			rx := regexp.MustCompile(`^([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$`)
 			ts := rx.ReplaceAllString(strings.Trim(string(t), "\n"), "$1-$2-$3 $4:$5:00")
