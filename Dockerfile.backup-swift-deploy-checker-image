@@ -1,0 +1,15 @@
+FROM golang as gobuilder
+COPY . /go/src/github.com/sapcc/containers/
+RUN set -uex; \
+    cd /go/src/github.com/sapcc/containers/backup-tools/swift-deploy-checker/go-src; \
+    export GOPATH=/go; \
+    #go get -v ./...; \
+    CGO_ENABLED=0 go build -v -ldflags '-s -w' -o /go/bin/swift-deploy-checker; \
+    mkdir -p /backup/env
+
+FROM alpine
+MAINTAINER "Josef Fröhle <josef.froehle@sap.com>"
+COPY --from=gobuilder /go/bin/swift-deploy-checker /bin/checker
+COPY --from=gobuilder /backup/env /backup/env
+RUN apk add --no-cache ca-certificates && update-ca-certificates
+ENTRYPOINT ["/bin/checker"]

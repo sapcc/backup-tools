@@ -1,0 +1,20 @@
+FROM golang as gobuilder
+COPY . /go/src/github.com/sapcc/containers/
+RUN set -uex; \
+    cd /go/src/github.com/sapcc/containers/backup-tools/backup-etcd-image/go-src; \
+    export GOPATH=/go; \
+    #go get -v ./...; \
+    CGO_ENABLED=0 go build -v -ldflags '-s -w' -o /go/bin/backup-etcd; \
+    mkdir -p /backup/env
+
+FROM quay.io/coreos/etcd:v2.3.8 as etcdMaster
+
+FROM alpine
+MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
+COPY --from=etcdMaster /etcd /bin/etcd
+COPY --from=etcdMaster /etcdctl /bin/etcdctl
+COPY --from=gobuilder /go/bin/backup-etcd /bin/backup-etcd
+COPY --from=gobuilder /backup/env /backup/env
+RUN apk add --no-cache ca-certificates && update-ca-certificates
+VOLUME ["/backup"]
+ENTRYPOINT ["/bin/backup-etcd"]
