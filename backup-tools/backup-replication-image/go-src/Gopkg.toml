@@ -25,8 +25,7 @@
   branch = "master"
   name = "github.com/ncw/swift"
 
-# only as long as build manually local and not merged
 [[constraint]]
-  branch = "backup-replication-golang"
+  branch = "master"
   name = "github.com/sapcc/containers"
 
