@@ -29,6 +29,12 @@ var (
 	EnvTo            = make([]*Env, 2)
 )
 
+func init() {
+	if dbtest := os.Getenv("BACKUP_TEST_CONTAINER"); "" != dbtest {
+		backupContainer = dbtest
+	}
+}
+
 // SafeCounter is safe to use concurrently.
 type SafePrinted struct {
 	v   int

@@ -12,11 +12,11 @@ import (
 const (
 	// LongDateForm Date Format
 	LongDateForm = "200601021504"
-	// ContainerName is used as Default Container
-	ContainerName = "db_backup"
 )
 
 var (
+	// ContainerName is used as Default Container
+	ContainerName = "db_backup"
 	// DefaultConfiguration variable automatic filled with ENV data
 	DefaultConfiguration *EnvironmentStruct
 	// ContainerPrefix variable for internal usage
@@ -40,6 +40,12 @@ var (
 	// MysqlRootPassword variable for internal usage
 	MysqlRootPassword string
 )
+
+func init() {
+	if dbtest := os.Getenv("BACKUP_TEST_CONTAINER"); "" != dbtest {
+		ContainerName = dbtest
+	}
+}
 
 // EnvironmentStruct structure for the export and import for usage with
 // backup-restore crossregion
