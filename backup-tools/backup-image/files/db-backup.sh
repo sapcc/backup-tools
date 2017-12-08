@@ -18,7 +18,7 @@ LAST_BACKUP_FILE="last_backup_timestamp"
 PIDFILE="/var/run/db-backup.pid"
 
 echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Downloading last backup timestamp from $SWIFT_CONTAINER/ ..."
-swift download -o /tmp/$LAST_BACKUP_FILE db_backup $SWIFT_PREFIX/$LAST_BACKUP_FILE
+timeout 3m swift download -o /tmp/$LAST_BACKUP_FILE db_backup $SWIFT_PREFIX/$LAST_BACKUP_FILE
 
 if [ -f "/tmp/$LAST_BACKUP_FILE" ] ; then
   LAST_BACKUP_TS="$(cat /tmp/$LAST_BACKUP_FILE)"
