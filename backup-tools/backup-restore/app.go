@@ -363,9 +363,9 @@ func appMysqlDB(table string) error {
 
 func appPgsqlDB(table string) error {
 
-	log.Println("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
+	log.Println("psql -U postgres -h localhost -f " + backupPath + "/" + table + ".sql")
 
-	_ = utils.ExeCmd("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
+	_ = utils.ExeCmd("psql -U postgres -h localhost -f " + backupPath + "/" + table + ".sql")
 
 	fmt.Println(">> database restore done: " + table)
 	return nil
