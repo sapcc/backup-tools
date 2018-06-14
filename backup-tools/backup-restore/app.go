@@ -335,12 +335,12 @@ func appProcessRestore() error {
 		} else if !f.IsDir() {
 			if strings.HasSuffix(f.Name(), ".sql") {
 
-				table := strings.TrimSuffix(f.Name(), ".sql")
+				database := strings.TrimSuffix(f.Name(), ".sql")
 
 				if utils.BackupType == "mysql" {
-					appMysqlDB(table)
+					appMysqlDB(database)
 				} else if utils.BackupType == "pgsql" {
-					appPgsqlDB(table)
+					appPgsqlDB(database)
 				}
 			}
 
@@ -349,24 +349,24 @@ func appProcessRestore() error {
 	return appQuit()
 }
 
-func appMysqlDB(table string) error {
+func appMysqlDB(database string) error {
 
 	//log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
-	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
+	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
 
 	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
-	_ = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
+	_ = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
 
-	fmt.Println(">> database restore done: " + table)
+	fmt.Println(">> database restore done: " + database)
 	return nil
 }
 
-func appPgsqlDB(table string) error {
+func appPgsqlDB(database string) error {
 
-	log.Println("psql -U postgres -h localhost -f " + backupPath + "/" + table + ".sql")
+	log.Println("psql -U postgres -h localhost -f " + backupPath + "/" + database + ".sql")
 
-	_ = utils.ExeCmd("psql -U postgres -h localhost -f " + backupPath + "/" + table + ".sql")
+	_ = utils.ExeCmd("psql -U postgres -h localhost -f " + backupPath + "/" + database + ".sql")
 
-	fmt.Println(">> database restore done: " + table)
+	fmt.Println(">> database restore done: " + database)
 	return nil
 }
