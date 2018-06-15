@@ -326,6 +326,8 @@ func appQuestManual() error {
 
 func appProcessRestore() error {
 
+	// the previous step swiftcli.UnpackFiles operates in /backup, not /newbackup
+	backupPath = utils.BackupPath
 	files, _ := ioutil.ReadDir(backupPath)
 
 	for _, f := range files {
