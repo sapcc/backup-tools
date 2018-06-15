@@ -14,10 +14,11 @@ endif
 
 ### Docker Targets
 
+all: build
+
 .PHONY: build
 build:
 	docker build $(BUILD_ARGS) -f ../../$(DOCKERFILE) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm ../..
-	docker system prune -f
 
 .PHONY: push
 push:
