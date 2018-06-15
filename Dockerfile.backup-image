@@ -13,18 +13,14 @@ RUN set -uex; \
 
 FROM hub.global.cloud.sap/monsoon/ubuntu:test16.04
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
+
 ENV RESTOREVER=0.1.0
-COPY --from=gobuilder /go/src/github.com/sapcc/containers/backup-tools/backup-image/files/db-backup.sh /usr/local/sbin/db-backup.sh
-COPY --from=gobuilder /go/bin/backup-run /usr/local/sbin/backup-run
-COPY --from=gobuilder /go/bin/backup-restore /usr/local/sbin/backup-restore
+
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
 	&& sed -i s/archive\.ubuntu\.com/de\.archive\.ubuntu\.com/g /etc/apt/sources.list \
 	&& echo "APT::Install-Suggests "0";" > /etc/apt/apt.conf.d/99local \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
-	&& chmod a+x /usr/local/sbin/db-backup.sh \
-	&& chmod a+x /usr/local/sbin/backup-run \
-	&& chmod a+x /usr/local/sbin/backup-restore \
 	&& apt-get update && apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates \
 	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /etc/apt/sources.list.d/postgresql.list \
@@ -40,5 +36,14 @@ RUN mkdir /backup \
 	&& test -x /usr/bin/mysqldump \
 	&& test -x /usr/bin/psql \
 	&& test -x /usr/bin/pg_dump
+
+COPY --from=gobuilder /go/src/github.com/sapcc/containers/backup-tools/backup-image/files/db-backup.sh /usr/local/sbin/db-backup.sh
+COPY --from=gobuilder /go/bin/backup-run /usr/local/sbin/backup-run
+COPY --from=gobuilder /go/bin/backup-restore /usr/local/sbin/backup-restore
+
+RUN chmod a+x /usr/local/sbin/db-backup.sh
+RUN chmod a+x /usr/local/sbin/backup-run
+RUN chmod a+x /usr/local/sbin/backup-restore
+
 VOLUME ["/backup"]
 CMD ["/usr/local/sbin/backup-run"]
