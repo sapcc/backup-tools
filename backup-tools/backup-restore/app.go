@@ -294,7 +294,7 @@ func appQuest2(index int) error {
 	for _, file := range files {
 		objects = append(objects, file.Name())
 	}
-	err = swiftcli.UnpackFiles(objects)
+	err = swiftcli.UnpackFiles(objects, backupPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -316,7 +316,7 @@ func appQuestManual() error {
 	for _, file := range files {
 		objects = append(objects, file.Name())
 	}
-	err := swiftcli.UnpackFiles(objects)
+	err := swiftcli.UnpackFiles(objects, backupPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -326,8 +326,6 @@ func appQuestManual() error {
 
 func appProcessRestore() error {
 
-	// the previous step swiftcli.UnpackFiles operates in /backup, not /newbackup
-	backupPath = utils.BackupPath
 	files, _ := ioutil.ReadDir(backupPath)
 
 	for _, f := range files {
