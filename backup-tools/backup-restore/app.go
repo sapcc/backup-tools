@@ -327,6 +327,7 @@ func appQuestManual() error {
 func appProcessRestore() error {
 
 	files, _ := ioutil.ReadDir(backupPath)
+
 	for _, f := range files {
 		if f.Name() == "." || f.Name() == ".." {
 			continue
@@ -365,7 +366,8 @@ func appPgsqlDB(database string) error {
 
 	log.Println("psql -U postgres -h localhost -f " + backupPath + "/" + database + ".sql")
 
-	_ = utils.ExeCmd("psql -U postgres -h localhost -f " + backupPath + "/" + database + ".sql")
+	out := utils.ExeCmd("psql -U postgres -h localhost -f " + backupPath + "/" + database + ".sql")
+	fmt.Println("%s\n", out)
 
 	fmt.Println(">> database restore done: " + database)
 	return nil
