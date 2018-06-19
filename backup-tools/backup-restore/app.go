@@ -27,12 +27,7 @@ var (
 
 func appQuit() error {
 
-	fmt.Println("Clearing " + backupPath + " ...")
-
-	_ = os.RemoveAll(backupPath)
-
-	fmt.Println("Clearing " + backupPath + " done!")
-
+	fmt.Println("Restore data still persist in " + backupPath)
 	fmt.Println("You have request the Exit - Good Bye!")
 
 	return cli.NewExitError("All Okay", 0)
@@ -175,7 +170,12 @@ func startRestoreInit(cc bool) error {
 		return err
 	}
 
-	os.Mkdir(backupPath, 0777)
+	tmpDir, err := ioutil.TempDir("", "newbackup")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	backupPath = tmpDir
 	/*
 	   fmt.Println("Original : ", intSlice[:])
 	   sort.Ints(intSlice)
@@ -233,7 +233,7 @@ func appQuest1(full bool) error {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Cross-Region Backup (need Config-String) with \"crossregion\"")
 	fmt.Println("Full backup-list with \"full-list\"")
-	fmt.Println("Manual backup restore from /newbackup/ with \"manual\"")
+	fmt.Println("Manual backup restore from " + backupPath + "with \"manual\"")
 	fmt.Print("Enter ID of backup to restore or \"QUIT\" to Exit: ")
 	text, _ := reader.ReadString('\n')
 	text = strings.TrimRight(text, "\n")
@@ -356,7 +356,8 @@ func appMysqlDB(database string) error {
 	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
 
 	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + database + " < " + backupPath + "/" + database + ".sql")
-	_ = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
+	out = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
+	fmt.Printf("%s\n", out)
 
 	fmt.Println(">> database restore done: " + database)
 	return nil
@@ -367,7 +368,7 @@ func appPgsqlDB(database string) error {
 	log.Println("psql -U postgres -h localhost -a -f " + backupPath + "/" + database + ".sql")
 
 	out := utils.ExeCmd("psql -U postgres -h localhost -a -f " + backupPath + "/" + database + ".sql")
-	fmt.Println("%s\n", out)
+	fmt.Printf("%s\n", out)
 
 	fmt.Println(">> database restore done: " + database)
 	return nil
