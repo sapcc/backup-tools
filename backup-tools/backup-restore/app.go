@@ -356,7 +356,7 @@ func appMysqlDB(database string) error {
 	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
 
 	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + database + " < " + backupPath + "/" + database + ".sql")
-	out = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
+	out := utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
 	fmt.Printf("%s\n", out)
 
 	fmt.Println(">> database restore done: " + database)
