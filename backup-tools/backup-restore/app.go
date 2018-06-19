@@ -27,12 +27,7 @@ var (
 
 func appQuit() error {
 
-	fmt.Println("Clearing " + backupPath + " ...")
-
-	_ = os.RemoveAll(backupPath)
-
-	fmt.Println("Clearing " + backupPath + " done!")
-
+	fmt.Println("Restore data still persist in " + backupPath)
 	fmt.Println("You have request the Exit - Good Bye!")
 
 	return cli.NewExitError("All Okay", 0)
@@ -175,7 +170,12 @@ func startRestoreInit(cc bool) error {
 		return err
 	}
 
-	os.Mkdir(backupPath, 0777)
+	tmpDir, err := ioutil.TempDir("", "newbackup")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	backupPath = tmpDir
 	/*
 	   fmt.Println("Original : ", intSlice[:])
 	   sort.Ints(intSlice)
@@ -233,7 +233,7 @@ func appQuest1(full bool) error {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Cross-Region Backup (need Config-String) with \"crossregion\"")
 	fmt.Println("Full backup-list with \"full-list\"")
-	fmt.Println("Manual backup restore from /newbackup/ with \"manual\"")
+	fmt.Println("Manual backup restore from " + backupPath + "with \"manual\"")
 	fmt.Print("Enter ID of backup to restore or \"QUIT\" to Exit: ")
 	text, _ := reader.ReadString('\n')
 	text = strings.TrimRight(text, "\n")
@@ -294,7 +294,7 @@ func appQuest2(index int) error {
 	for _, file := range files {
 		objects = append(objects, file.Name())
 	}
-	err = swiftcli.UnpackFiles(objects)
+	err = swiftcli.UnpackFiles(objects, backupPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -316,7 +316,7 @@ func appQuestManual() error {
 	for _, file := range files {
 		objects = append(objects, file.Name())
 	}
-	err := swiftcli.UnpackFiles(objects)
+	err := swiftcli.UnpackFiles(objects, backupPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -327,6 +327,7 @@ func appQuestManual() error {
 func appProcessRestore() error {
 
 	files, _ := ioutil.ReadDir(backupPath)
+
 	for _, f := range files {
 		if f.Name() == "." || f.Name() == ".." {
 			continue
@@ -335,12 +336,12 @@ func appProcessRestore() error {
 		} else if !f.IsDir() {
 			if strings.HasSuffix(f.Name(), ".sql") {
 
-				table := strings.TrimSuffix(f.Name(), ".sql")
+				database := strings.TrimSuffix(f.Name(), ".sql")
 
 				if utils.BackupType == "mysql" {
-					appMysqlDB(table)
+					appMysqlDB(database)
 				} else if utils.BackupType == "pgsql" {
-					appPgsqlDB(table)
+					appPgsqlDB(database)
 				}
 			}
 
@@ -349,24 +350,26 @@ func appProcessRestore() error {
 	return appQuit()
 }
 
-func appMysqlDB(table string) error {
+func appMysqlDB(database string) error {
 
-	//log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
-	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
+	//log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + database + " < " + backupPath + "/" + database + ".sql")
+	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
 
-	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + table + " < " + backupPath + "/" + table + ".sql")
-	_ = utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + table + ".sql")
+	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + database + " < " + backupPath + "/" + database + ".sql")
+	out := utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
+	fmt.Printf("%s\n", out)
 
-	fmt.Println(">> database restore done: " + table)
+	fmt.Println(">> database restore done: " + database)
 	return nil
 }
 
-func appPgsqlDB(table string) error {
+func appPgsqlDB(database string) error {
 
-	log.Println("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
+	log.Println("psql -U postgres -h localhost -a -f " + backupPath + "/" + database + ".sql")
 
-	_ = utils.ExeCmd("psql -U postgres -h localhost -d " + table + " -f " + backupPath + "/" + table + ".sql")
+	out := utils.ExeCmd("psql -U postgres -h localhost -a -f " + backupPath + "/" + database + ".sql")
+	fmt.Printf("%s\n", out)
 
-	fmt.Println(">> database restore done: " + table)
+	fmt.Println(">> database restore done: " + database)
 	return nil
 }

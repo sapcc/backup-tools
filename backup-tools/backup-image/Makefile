@@ -1,7 +1,7 @@
 SHELL       := /bin/sh
 REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/backup-tools
-VERSION     ?= v0.1.2
+VERSION     ?= v0.5.14
 DOCKERFILE  ?= Dockerfile.backup-image
 
 ### Proxy Foo
@@ -14,10 +14,11 @@ endif
 
 ### Docker Targets
 
+all: build
+
 .PHONY: build
 build:
 	docker build $(BUILD_ARGS) -f ../../$(DOCKERFILE) -t $(REGISTRY)$(IMAGE):$(VERSION) --rm ../..
-	docker system prune -f
 
 .PHONY: push
 push:

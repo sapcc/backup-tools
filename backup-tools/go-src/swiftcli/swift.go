@@ -246,25 +246,27 @@ func SwiftUploadPrefix(clientSwift *swift.Connection, prefix string) ([]string, 
 */
 
 //UnpackFiles Unpack files like .tar.gz and .gz
-func UnpackFiles(files []string) error {
+func UnpackFiles(files []string, targetDir string ) error {
+	if targetDir == "" { targetDir = utils.BackupPath }
+
 	for _, file := range files {
 		if strings.HasSuffix(file, ".tar.gz") {
-			err := utils.Ungzip(file, utils.BackupPath)
+			err := utils.Ungzip(file, targetDir)
 			if err != nil {
-				log.Println("ungzip", file, utils.BackupPath)
+				log.Println("ungzip", file, targetDir)
 				log.Fatal(err)
 			}
-			err = utils.UntarSplit(strings.TrimSuffix(file, ".gz"), utils.BackupPath)
+			err = utils.UntarSplit(strings.TrimSuffix(file, ".gz"), targetDir)
 			if err != nil {
-				log.Println("untarSplit", strings.TrimSuffix(file, ".gz"), utils.BackupPath)
+				log.Println("untarSplit", strings.TrimSuffix(file, ".gz"), targetDir)
 				log.Fatal(err)
 			}
 			os.Remove(file)
 			os.Remove(strings.TrimSuffix(file, ".gz"))
 		} else if strings.HasSuffix(file, ".gz") {
-			err := utils.Ungzip(file, utils.BackupPath)
+			err := utils.Ungzip(file, targetDir)
 			if err != nil {
-				log.Println(file, utils.BackupPath)
+				log.Println(file, targetDir)
 				log.Fatal(err)
 			}
 			os.Remove(file)
