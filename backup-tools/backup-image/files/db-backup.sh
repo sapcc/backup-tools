@@ -52,20 +52,20 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] || [ "$IS_NEXT_TS_INCR" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
-    echo "$CUR_TS" > /tmp/$LAST_BACKUP_FILE
 
     # MySQL Backup (full)
     #xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     for i in `mysql --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET -e 'show databases' | awk '{print $1}' | grep -E -v "(^Database$|^information_schema$|^sys$|^mysql$|^performance_schema$)"`; do
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
-      mysqldump --opt --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET --databases $i > $BACKUP_BASE/$i.sql
+      mysqldump --opt --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET --databases $i > $BACKUP_BASE/$i.sql || exit 1
       gzip -f $BACKUP_BASE/$i.sql
       if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz"
+        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
       fi
     done
 
+    echo "$CUR_TS" > /tmp/$LAST_BACKUP_FILE
     swift upload --object-name "$SWIFT_PREFIX/$LAST_BACKUP_FILE" "$SWIFT_CONTAINER" "/tmp/$LAST_BACKUP_FILE"
   fi
 fi
@@ -86,17 +86,17 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
-    echo "$CUR_TS" > /tmp/$LAST_BACKUP_FILE
 
     for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
-      pg_dump -U postgres -h localhost -c --if-exist -C $i --file=$BACKUP_BASE/$i.sql.gz -Z 5
+      pg_dump -U postgres -h localhost -c --if-exist -C $i --file=$BACKUP_BASE/$i.sql.gz -Z 5 || exit 1
       if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz"
+        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
       fi
     done
 
+    echo "$CUR_TS" > /tmp/$LAST_BACKUP_FILE
     swift upload --object-name "$SWIFT_PREFIX/$LAST_BACKUP_FILE" "$SWIFT_CONTAINER" "/tmp/$LAST_BACKUP_FILE"
   fi
 fi
