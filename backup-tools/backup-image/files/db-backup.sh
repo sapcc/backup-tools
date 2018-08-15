@@ -3,6 +3,8 @@
 SWIFT_CONTAINER="db_backup"
 SWIFT_PREFIX="${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
 
+SEGMENT_SIZE=2147483648
+
 if [ "$BACKUP_EXPIRE_AFTER" = "" ] ; then
   BACKUP_EXPIRE_AFTER=864000
 fi
@@ -61,7 +63,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
       gzip -f $BACKUP_BASE/$i.sql
       if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
+        swift upload --segment-size $SEGMENT_SIZE --use-slo --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
       fi
     done
 
@@ -92,7 +94,7 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
       pg_dump -U postgres -h localhost -c --if-exist -C $i --file=$BACKUP_BASE/$i.sql.gz -Z 5 || exit 1
       if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-        swift upload --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
+        swift upload --segment-size $SEGMENT_SIZE --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
       fi
     done
 
