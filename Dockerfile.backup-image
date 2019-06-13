@@ -11,7 +11,7 @@ RUN set -uex; \
     #go get -v; \
     CGO_ENABLED=0 go build -v -ldflags "-s -w" -o /go/bin/backup-restore
 
-FROM hub.global.cloud.sap/monsoon/ubuntu:test16.04
+FROM ubuntu:16.04
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
 
 ENV RESTOREVER=0.1.0
@@ -23,7 +23,7 @@ RUN mkdir /backup \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& apt-get update && apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates \
-	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /etc/apt/sources.list.d/postgresql.list \
+	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 11" > /etc/apt/sources.list.d/postgresql.list \
 	&& wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
 	&& apt-get update && apt-get dist-upgrade -y \
 	&& apt-get install -y --no-install-recommends mariadb-client postgresql-client python-swiftclient \
