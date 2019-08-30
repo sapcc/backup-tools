@@ -1,7 +1,7 @@
 SHELL       := /bin/sh
 REGISTRY    := $(if $(REGISTRY),$(REGISTRY)/,)
 IMAGE       ?= sapcc/backup-tools
-VERSION     ?= v0.6.0
+VERSION     ?= v0.6.1
 DOCKERFILE  ?= Dockerfile.backup-image
 
 ### Proxy Foo
