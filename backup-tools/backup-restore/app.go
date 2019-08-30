@@ -365,9 +365,25 @@ func appMysqlDB(database string) error {
 
 func appPgsqlDB(database string) error {
 
-	log.Println("psql -U postgres -h localhost -a -f " + backupPath + "/" + database + ".sql")
+	host := "localhost"
+	if os.Getenv("PGSQL_HOST") != "" {
+		host = os.Getenv("PGSQL_HOST")
+	}
 
-	out := utils.ExeCmd("psql -U postgres -h localhost -a -f " + backupPath + "/" + database + ".sql")
+	user := "postgres"
+	if os.Getenv("PGSQL_USER") != "" {
+		host = os.Getenv("PGSQL_USER")
+	}
+
+	env := []string{}
+	if os.Getenv("PGPASSWORD") != "" {
+		env = append(env, fmt.Sprintf("PGPASSWORD=%s", os.Getenv("PGPASSWORD")))
+	}
+
+	psqlCmd := fmt.Sprintf("psql -U %s -h %s -a -f %s/%s.sql", user, host, backupPath, database)
+	log.Println(psqlCmd)
+
+	out := utils.ExeCmd(psqlCmd, env)
 	fmt.Printf("%s\n", out)
 
 	fmt.Println(">> database restore done: " + database)
