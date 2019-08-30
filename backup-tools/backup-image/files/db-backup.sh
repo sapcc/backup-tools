@@ -15,6 +15,13 @@ MYSQL_SOCKET=/db/socket/mysqld.sock
 PGSQL_PORT=5432
 PGSQL_SOCKET=/db/socket/.s.PGSQL.$PGSQL_PORT
 
+if [ "$PGSQL_HOST" = "" ] ; then
+  PGSQL_HOST=localhost
+fi
+if [ "$PGSQL_USER" = "" ] ; then
+  PGSQL_USER=postgres
+fi
+
 CUR_TS="$(date +%Y%m%d%H%M)"
 LAST_BACKUP_FILE="last_backup_timestamp"
 PIDFILE="/var/run/db-backup.pid"
@@ -89,9 +96,9 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
     echo $$ > $PIDFILE
 
-    for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h localhost -U postgres | grep -E -v "(^template|^postgres$)"` ; do
+    for i in `psql -q -A -t -c "SELECT datname FROM pg_database" -h $PGSQL_HOST -U $PGSQL_USER | grep -E -v "(^template|^postgres$)"` ; do
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
-      pg_dump -U postgres -h localhost -c --if-exist -C $i --file=$BACKUP_BASE/$i.sql.gz -Z 5 || exit 1
+      pg_dump -U $PGSQL_USER -h $PGSQL_HOST -c --if-exist -C $i --file=$BACKUP_BASE/$i.sql.gz -Z 5 || exit 1
       if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
         swift upload --segment-size $SEGMENT_SIZE --use-slo --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
