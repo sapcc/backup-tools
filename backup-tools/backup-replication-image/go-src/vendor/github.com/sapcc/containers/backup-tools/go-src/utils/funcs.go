@@ -35,7 +35,7 @@ var (
 	BackupType string
 )
 
-func ExeCmd(cmd string) string {
+func ExeCmd(cmd string, env []string) string {
 	//fmt.Println("command is ", cmd)
 	// splitting head => g++ parts => rest of the command
 	parts := strings.Fields(cmd)
@@ -46,6 +46,10 @@ func ExeCmd(cmd string) string {
 	cmdExec := exec.Command(head, parts...)
 	var out bytes.Buffer
 	cmdExec.Stdout = &out
+
+	if len(env) > 0 {
+		cmdExec.Env = env
+	}
 
 	err := cmdExec.Run()
 	if err != nil {
