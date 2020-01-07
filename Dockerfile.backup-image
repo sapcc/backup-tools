@@ -23,7 +23,7 @@ RUN mkdir /backup \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& apt-get update && apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates \
-	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 11" > /etc/apt/sources.list.d/postgresql.list \
+	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 12" > /etc/apt/sources.list.d/postgresql.list \
 	&& wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
 	&& apt-get update && apt-get dist-upgrade -y \
 	&& apt-get install -y --no-install-recommends mariadb-client postgresql-client python-swiftclient \
