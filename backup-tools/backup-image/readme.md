@@ -124,6 +124,8 @@ An example deployment:
             value: {{ .Values.backup.interval_full | quote }}
           - name: BACKUP_MYSQL_INCR
             value: {{ .Values.backup.interval_incr | quote }}
+          - name: BACKUP_TIMEOUT_SECONDS
+            value: {{ .Values.backup.timeout_sec | default 600 | quote }}
         volumeMounts:
         - mountPath: /db/data
           name: mariadb-persistent-storage
