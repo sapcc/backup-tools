@@ -48,6 +48,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
   BACKUP_BASE=/backup/mysql/base
   USERNAME=root
   PASSWORD=$MYSQL_ROOT_PASSWORD
+  BACKUP_TIMEOUT=${BACKUP_TIMEOUT_SECONDS:=600}
 
   if [ ! -d "$BACKUP_BASE" ] ; then
     mkdir -p "$BACKUP_BASE"
@@ -66,7 +67,7 @@ if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] 
     #xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
     for i in `mysql --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET -e 'show databases' | awk '{print $1}' | grep -E -v "(^Database$|^information_schema$|^sys$|^mysql$|^performance_schema$)"`; do
       echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
-      mysqldump --opt --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET --databases $i > $BACKUP_BASE/$i.sql || exit 1
+      timeout ${BACKUP_TIMEOUT}s mysqldump --opt --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET --databases $i > $BACKUP_BASE/$i.sql || exit 1
       gzip -f $BACKUP_BASE/$i.sql
       if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
         echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
