@@ -13,6 +13,7 @@ RUN set -uex; \
 
 FROM ubuntu:16.04
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
+LABEL source_repository="https://github.com/sapcc/containers"
 
 ENV RESTOREVER=0.1.0
 

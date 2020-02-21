@@ -9,6 +9,8 @@ RUN set -uex; \
 
 FROM alpine
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
+LABEL source_repository="https://github.com/sapcc/containers"
+
 COPY --from=gobuilder /go/bin/replication-run /replication-run
 COPY --from=gobuilder /backup/env /backup/env
 RUN apk add --no-cache ca-certificates && update-ca-certificates
