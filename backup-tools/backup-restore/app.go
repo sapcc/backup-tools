@@ -372,7 +372,7 @@ func appPgsqlDB(database string) error {
 
 	user := "postgres"
 	if os.Getenv("PGSQL_USER") != "" {
-		host = os.Getenv("PGSQL_USER")
+		user = os.Getenv("PGSQL_USER")
 	}
 
 	env := []string{}
