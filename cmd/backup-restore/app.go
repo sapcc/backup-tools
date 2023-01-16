@@ -69,17 +69,8 @@ func startRestoreInit(cc bool) error {
 		fmt.Println("\n\nPress 'Enter' to continue...")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
-	if os.Getenv("BACKUP_PGSQL_FULL") != "" {
-		utils.BackupType = "pgsql"
-	} else if os.Getenv("BACKUP_MYSQL_FULL") != "" {
-		utils.BackupType = "mysql"
-	}
 
-	if utils.BackupType == "" {
-		fmt.Println("\n\nNo System for the backup restore found.")
-		fmt.Println("\n\n******** * * EXIT NO SUPPORTED SYSTEM FOUND * * ********")
-		return cli.NewExitError("-- E: 1920291 --", 12)
-	} else if cc == true {
+	if cc {
 	jumpToCJOFj30g2:
 
 		reader := bufio.NewReader(os.Stdin)
@@ -279,7 +270,7 @@ func appQuest2(index int) error {
 
 	fmt.Println("Download: " + utils.List2[index])
 
-	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup", utils.BackupType, "base"}, "/"), &backupPath, false)
+	_, err = swiftcli.SwiftDownloadPrefix(clientSwift, strings.Join([]string{configuration.ContainerPrefix, slicedStr[3], "backup/pgsql/base"}, "/"), &backupPath, false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -338,29 +329,12 @@ func appProcessRestore() error {
 
 				database := strings.TrimSuffix(f.Name(), ".sql")
 
-				if utils.BackupType == "mysql" {
-					appMysqlDB(database)
-				} else if utils.BackupType == "pgsql" {
-					appPgsqlDB(database)
-				}
+				appPgsqlDB(database)
 			}
 
 		}
 	}
 	return appQuit()
-}
-
-func appMysqlDB(database string) error {
-
-	//log.Println("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + database + " < " + backupPath + "/" + database + ".sql")
-	log.Println("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
-
-	//_ = exeCmdBashC("mysql -u root -p'" + os.Getenv("MYSQL_ROOT_PASSWORD") + "' --socket /db/socket/mysqld.sock " + database + " < " + backupPath + "/" + database + ".sql")
-	out := utils.ExeCmdBashC("mysql -u root -p'" + configuration.MysqlRootPassword + "' --socket /db/socket/mysqld.sock < " + backupPath + "/" + database + ".sql")
-	fmt.Printf("%s\n", out)
-
-	fmt.Println(">> database restore done: " + database)
-	return nil
 }
 
 func appPgsqlDB(database string) error {

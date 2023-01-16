@@ -1,19 +1,13 @@
 # backup-restore
 
-
-### mariadb, mysql and postgres backups
-
-To restore a mysql/mariadb or postgres backup please run in your `backup` container of your pod this command:
+To restore a postgres backup please run in your `backup` container of your pod this command:
 
 `backup-restore`
 
 follow the instructions there. At any error the process will give back a fatal error and stop the process.
 
-### etcd backups!!
+## Cross-Region Backup-Restore
 
-This tool will not help you to restore a etcd backup. How to restore a etcd backup? Look at [etcd V2 Admin Guide](https://github.com/coreos/etcd/blob/master/Documentation/v2/admin_guide.md) 
-
-### Cross-Region Backup-Restore
 Run this in the POD container `backup`.
 
 To minifiy the config to run a cross-region backup you can create a config with the following command from the same pod in an other region.
@@ -50,28 +44,26 @@ You will be able to restore manual backups.
 
 Please create the directory `/newbackup/` in the root path of container `backup` in your POD. Example:
 
-`monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'mkdir /newbackup/'`
+`kubectl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'mkdir /newbackup/'`
 
 After that, you can transfer your backup files to it. Example:
 
 ```
-cat backup.tar.gz | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.tar.gz'
+cat backup.tar.gz | kubectl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.tar.gz'
 ```
 
 ```
-cat backup.zip | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.zip'
+cat backup.zip | kubectl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.zip'
 ```
 
 ```
-cat backup.sql | monsoonctl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.sql'
+cat backup.sql | kubectl exec pgsql --namespace c5252118 -i -c backup -- /bin/bash -c 'cat >/newbackup/backup.sql'
 ```
 
 When you have tranfered all your needed backup files, you can run `backup-restore` and enter `manual` to restore your backup from `/newbackup/`
-
 
 ## Build Go binary and update configs
 
 If you need to change the code please build it for `Linux/amd64` and upload the binary to the "release". To make a release tag of the current git status with `restore-v....` i.e. `restore-v0.2.0`. Now you can add there the binary.
 
 Now you need to update your helm deployment and change the download url.
-

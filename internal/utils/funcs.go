@@ -30,9 +30,6 @@ var (
 
 	// List2 global var
 	List2 []string
-
-	// BackupType global var
-	BackupType string
 )
 
 func ExeCmd(cmd string, env []string) string {
@@ -210,9 +207,9 @@ func untar2Wrapped(tarball, target string, strip bool) error {
 			return err
 		}
 		fname := header.Name
-		if strip == true {
-			fname = strings.TrimPrefix(fname, "/backup/"+BackupType+"/base/")
-			fname = strings.TrimPrefix(fname, "backup/"+BackupType+"/base/")
+		if strip {
+			fname = strings.TrimPrefix(fname, "/backup/pgsql/base/")
+			fname = strings.TrimPrefix(fname, "backup/pgsql/base/")
 		}
 		path := filepath.Join(target, fname)
 		info := header.FileInfo()

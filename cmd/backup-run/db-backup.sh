@@ -10,8 +10,6 @@ if [ "$BACKUP_EXPIRE_AFTER" = "" ] ; then
 fi
 
 # We assume that the databases are using their default ports
-MYSQL_PORT=3306
-MYSQL_SOCKET=/db/socket/mysqld.sock
 PGSQL_PORT=5432
 PGSQL_SOCKET=/db/socket/.s.PGSQL.$PGSQL_PORT
 
@@ -37,46 +35,9 @@ fi
 
 if [ -f "$PIDFILE" ] ; then
   PID="`cat $PIDFILE`"
-  if [ -e /proc/$PID -a /proc/$PID/exe ] ; then
+  if [ -e /proc/$PID -a -e /proc/$PID/exe ] ; then
     echo "Backup already in progress..."
     exit 1
-  fi
-fi
-
-if [ "$BACKUP_MYSQL_FULL" ] && [ "$BACKUP_MYSQL_INCR" ] && [ -S $MYSQL_SOCKET ] ; then
-  DATADIR=/db/data/
-  BACKUP_BASE=/backup/mysql/base
-  USERNAME=root
-  PASSWORD=$MYSQL_ROOT_PASSWORD
-  BACKUP_TIMEOUT=${BACKUP_TIMEOUT_SECONDS:=600}
-
-  if [ ! -d "$BACKUP_BASE" ] ; then
-    mkdir -p "$BACKUP_BASE"
-  fi
-
-  # Create backup interval
-  INTERVAL_FULL="$BACKUP_MYSQL_FULL"
-  INTERVAL_INCR="$BACKUP_MYSQL_INCR"
-  IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
-  IS_NEXT_TS_INCR="$(date --date="now - $INTERVAL_INCR" +%Y%m%d%H%M)"
-
-  if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] || [ "$IS_NEXT_TS_INCR" -ge "$LAST_BACKUP_TS" ] ; then
-    echo $$ > $PIDFILE
-
-    # MySQL Backup (full)
-    #xtrabackup --backup --user=$USERNAME --password=$PASSWORD --target-dir=$BACKUP_BASE --datadir=$DATADIR --socket=$MYSQL_SOCKET
-    for i in `mysql --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET -e 'show databases' | awk '{print $1}' | grep -E -v "(^Database$|^information_schema$|^sys$|^mysql$|^performance_schema$)"`; do
-      echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Creating backup of database $i ..."
-      timeout ${BACKUP_TIMEOUT}s mysqldump --opt --user=$USERNAME --password=$PASSWORD --socket=$MYSQL_SOCKET --databases $i > $BACKUP_BASE/$i.sql || exit 1
-      gzip -f $BACKUP_BASE/$i.sql
-      if [ -s "$BACKUP_BASE/$i.sql.gz" ] ; then
-        echo "$(date +'%Y/%m/%d %H:%M:%S %Z') Uploading backup to $SWIFT_CONTAINER/$CUR_TS ..."
-        swift upload --segment-size $SEGMENT_SIZE --use-slo --header "X-Delete-After: $BACKUP_EXPIRE_AFTER" --changed --object-name "$SWIFT_PREFIX/$CUR_TS$BACKUP_BASE/$i.sql.gz" "$SWIFT_CONTAINER" "$BACKUP_BASE/$i.sql.gz" || exit 1
-      fi
-    done
-
-    echo "$CUR_TS" > /tmp/$LAST_BACKUP_FILE
-    swift upload --object-name "$SWIFT_PREFIX/$LAST_BACKUP_FILE" "$SWIFT_CONTAINER" "/tmp/$LAST_BACKUP_FILE"
   fi
 fi
 
@@ -91,7 +52,6 @@ if [ "$BACKUP_PGSQL_FULL" ] ; then
 
   # Create backup interval
   INTERVAL_FULL="$BACKUP_PGSQL_FULL"
-  INTERVAL_INCR="$BACKUP_PGSQL_INCR"
   IS_NEXT_TS_FULL="$(date --date="now - $INTERVAL_FULL" +%Y%m%d%H%M)"
 
   if [ "$IS_NEXT_TS_FULL" -ge "$LAST_BACKUP_TS" ] ; then
