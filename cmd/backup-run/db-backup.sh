@@ -5,20 +5,9 @@ SWIFT_PREFIX="${OS_REGION_NAME}/${MY_POD_NAMESPACE}/${MY_POD_NAME}"
 
 SEGMENT_SIZE=2147483648
 
-if [ "$BACKUP_EXPIRE_AFTER" = "" ] ; then
-  BACKUP_EXPIRE_AFTER=864000
-fi
-
-# We assume that the databases are using their default ports
-PGSQL_PORT=5432
-PGSQL_SOCKET=/db/socket/.s.PGSQL.$PGSQL_PORT
-
-if [ "$PGSQL_HOST" = "" ] ; then
-  PGSQL_HOST=localhost
-fi
-if [ "$PGSQL_USER" = "" ] ; then
-  PGSQL_USER=postgres
-fi
+: "${BACKUP_EXPIRE_AFTER:=864000}"
+: "${PGSQL_HOST:=localhost}" # NOTE: port 5432 is implied
+: "${PGSQL_USER:=postgres}"
 
 CUR_TS="$(date +%Y%m%d%H%M)"
 LAST_BACKUP_FILE="last_backup_timestamp"
