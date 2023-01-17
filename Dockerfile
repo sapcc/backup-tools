@@ -11,6 +11,7 @@ LABEL source_repository="https://github.com/sapcc/containers"
 ENV RESTOREVER=0.1.0
 ENV TZ=Etc/UTC
 ARG DEBIAN_FRONTEND=noninteractive
+ARG POSTGRES_VERSION=12
 
 RUN mkdir /backup \
 	&& sed -i s/^deb-src/\#\ deb-src/g /etc/apt/sources.list \
@@ -19,17 +20,15 @@ RUN mkdir /backup \
 	&& echo "APT::Install-Recommends "0";" >> /etc/apt/apt.conf.d/99local \
 	&& apt-get update && apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends wget lsb-release ca-certificates gnupg2 \
-	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main 12" > /etc/apt/sources.list.d/postgresql.list \
+	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main $POSTGRES_VERSION" > /etc/apt/sources.list.d/postgresql.list \
 	&& wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
 	&& apt-get update && apt-get dist-upgrade -y \
-	&& apt-get install -y --no-install-recommends mariadb-client postgresql-client python3-swiftclient \
-	&& apt-get install -y --no-install-recommends less vim iproute2 man-db mc \
+	&& apt-get install -y --no-install-recommends postgresql-client-$POSTGRES_VERSION python3-swiftclient \
+	&& apt-get install -y --no-install-recommends less vim iproute2 \
 	&& rm -f /var/log/*.log /var/log/apt/* \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& ln -sf /proc/1/fd/1 /var/log/backup.log \
 	&& test -x /usr/bin/swift \
-	&& test -x /usr/bin/mysql \
-	&& test -x /usr/bin/mysqldump \
 	&& test -x /usr/bin/psql \
 	&& test -x /usr/bin/pg_dump
 
