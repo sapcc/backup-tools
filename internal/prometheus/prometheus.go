@@ -12,14 +12,12 @@ import (
 
 // Gauge struct for the prometheus
 type Gauge struct {
-	processBegin      prometheus.Gauge
-	processFinish     prometheus.Gauge
-	lastSuccess       prometheus.Gauge
-	lastError         prometheus.Gauge
-	countFilesAll     prometheus.Gauge
-	countFilesCurrent prometheus.Gauge
-	countSuccess      prometheus.Counter
-	countError        prometheus.Counter
+	processBegin  prometheus.Gauge
+	processFinish prometheus.Gauge
+	lastSuccess   prometheus.Gauge
+	lastError     prometheus.Gauge
+	countSuccess  prometheus.Counter
+	countError    prometheus.Counter
 }
 
 var (
@@ -61,58 +59,10 @@ func (g *Gauge) initBackup() {
 		Help: "Unix Timestampf of last backup finish",
 	})
 
-	g.registry(false)
+	g.registry()
 }
 
-func (g *Gauge) initReplication() {
-	g.lastSuccess = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_replication_last_success",
-		Help: "Unix Timestamp of last successful replication run",
-	})
-
-	g.lastError = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_replication_last_error",
-		Help: "Unix Timestamp of last failed replication run",
-	})
-
-	g.countSuccess = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "backup_replication_count_success",
-		Help: "Counter for successful replication runs",
-	})
-
-	g.countError = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "backup_replication_count_error",
-		Help: "Counter for failed replication runs",
-	})
-
-	g.countFilesAll = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_replication_count_files_all",
-		Help: "Counter of all current files to replicate",
-	})
-
-	g.countFilesCurrent = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_replication_count_files_current",
-		Help: "Counter of current files to replicate are done",
-	})
-
-	g.processBegin = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_replication_last_start",
-		Help: "Unix Timestamp of last replication start",
-	})
-
-	g.processFinish = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "backup_replication_last_finish",
-		Help: "Unix Timestampf of last replication finish",
-	})
-
-	g.registry(true)
-}
-
-func (g *Gauge) registry(replicate bool) {
-	if replicate {
-		registry.MustRegister(g.countFilesAll)
-		registry.MustRegister(g.countFilesCurrent)
-	}
+func (g *Gauge) registry() {
 	registry.MustRegister(g.countError)
 	registry.MustRegister(g.countSuccess)
 	registry.MustRegister(g.lastError)
@@ -121,28 +71,14 @@ func (g *Gauge) registry(replicate bool) {
 	registry.MustRegister(g.processFinish)
 }
 
-func (g *Gauge) initLast(replicate bool) {
+func (g *Gauge) initLast() {
 	g.lastError.Set(0)
 	g.lastSuccess.Set(0)
-	if replicate {
-		g.countFilesAll.Set(0)
-		g.countFilesCurrent.Set(0)
-	}
 }
 
 // Beginn set the start time of the process
 func (g *Gauge) Beginn() {
 	g.processBegin.Set(float64(time.Now().Unix()))
-}
-
-// AllFiles set the start time of the process
-func (g *Gauge) AllFiles(filesCount int) {
-	g.countFilesAll.Set(float64(filesCount))
-}
-
-// CurrentFile set the start time of the process
-func (g *Gauge) CurrentFile(fileId int) {
-	g.countFilesCurrent.Set(float64(fileId))
 }
 
 // Finish set the finish time of the process
@@ -181,14 +117,6 @@ func (g *Gauge) ServerStart() {
 func NewBackup() *Gauge {
 	gauge := new(Gauge)
 	gauge.initBackup()
-	gauge.initLast(false)
-	return gauge
-}
-
-// NewReplication create a Gauge object for Replication
-func NewReplication() *Gauge {
-	gauge := new(Gauge)
-	gauge.initReplication()
-	gauge.initLast(true)
+	gauge.initLast()
 	return gauge
 }

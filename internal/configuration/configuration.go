@@ -1,12 +1,8 @@
 package configuration
 
 import (
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
-
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -60,34 +56,6 @@ type EnvironmentStruct struct {
 	OsProjectDomainName  string `json:"opdn,omitempty" yaml:"os_project_domain,omitempty"`
 	OsRegionName         string `json:"orn,omitempty" yaml:"os_region_name,omitempty"`
 	OsPassword           string `json:"op,omitempty" yaml:"os_password,omitempty"`
-}
-
-type EnvironmentYamlReplication struct {
-	From EnvironmentStruct
-	To   []EnvironmentStruct
-}
-
-func YAMLReplication(filename string) EnvironmentYamlReplication {
-	c := EnvironmentYamlReplication{}
-	// get the abs
-	// which will try to find the 'filename' from current working dir too.
-	yamlAbsPath, err := filepath.Abs(filename)
-	if err != nil {
-		panic(err)
-	}
-
-	// read the raw contents of the file
-	data, err := ioutil.ReadFile(yamlAbsPath)
-	if err != nil {
-		panic(err)
-	}
-
-	// put the file's contents as yaml to the default configuration(c)
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		panic(err)
-	}
-
-	return c
 }
 
 func init() {
