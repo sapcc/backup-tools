@@ -1,7 +1,6 @@
 FROM golang:1.20 as gobuilder
 
 COPY . /src
-RUN cd /src && CGO_ENABLED=0 go build -ldflags "-s -w" -o /pkg/bin/backup-run     ./cmd/backup-run
 RUN cd /src && CGO_ENABLED=0 go build -ldflags "-s -w" -o /pkg/bin/backup-restore ./cmd/backup-restore
 RUN cd /src && CGO_ENABLED=0 go build -ldflags "-s -w" -o /pkg/bin/backup-tools   .
 
