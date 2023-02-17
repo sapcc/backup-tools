@@ -1,9 +1,11 @@
-FROM golang as gobuilder
+FROM golang:1.20 as gobuilder
 
 COPY . /src
 RUN cd /src && CGO_ENABLED=0 go build -ldflags "-s -w" -o /pkg/bin/backup-run     ./cmd/backup-run
 RUN cd /src && CGO_ENABLED=0 go build -ldflags "-s -w" -o /pkg/bin/backup-restore ./cmd/backup-restore
+RUN cd /src && CGO_ENABLED=0 go build -ldflags "-s -w" -o /pkg/bin/backup-tools   .
 
+# TODO: Once we've updated all Postgres to beyond 12, move to an Alpine image with psql/pg_dump from the stock Alpine packages.
 FROM ubuntu:22.04
 MAINTAINER "Josef Fröhle <josef.froehle@sap.com>, Norbert Tretkowski <norbert.tretkowski@sap.com>"
 LABEL source_repository="https://github.com/sapcc/containers"
