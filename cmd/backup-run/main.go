@@ -9,40 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urfave/cli"
-
 	"github.com/sapcc/containers/internal/prometheus"
 )
 
-const (
-	appName = "Database Backup"
-)
-
 func main() {
-	app := cli.NewApp()
-	app.Name = appName
-	app.Version = versionString()
-	app.Authors = []cli.Author{
-		{
-			Name:  "Norbert Tretkowski",
-			Email: "norbert.tretkowski@sap.com",
-		},
-		{
-			Name:  "Josef Fröhle",
-			Email: "josef.froehle@sap.com",
-		},
-	}
-	app.Usage = "Create Database Backups"
-	app.Action = runServer
-	app.Run(os.Args)
-}
-
-func runServer(c *cli.Context) {
 	bp := prometheus.NewBackup()
 	go func() {
-		cmd := "/usr/local/sbin/db-backup.sh"
 		for {
-			command := exec.Command(cmd)
+			command := exec.Command("/usr/local/sbin/db-backup.sh")
 			command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
 			bp.Beginn()
@@ -69,8 +43,4 @@ func runServer(c *cli.Context) {
 	}()
 
 	bp.ServerStart()
-}
-
-func versionString() string {
-	return fmt.Sprintf("0.1.2")
 }
