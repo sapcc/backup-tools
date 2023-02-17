@@ -21,8 +21,11 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
+	"github.com/sapcc/go-api-declarations/bininfo"
+	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
 )
 
@@ -34,6 +37,9 @@ func usage() {
 }
 
 func main() {
+	wrap := httpext.WrapTransport(&http.DefaultTransport)
+	wrap.SetOverrideUserAgent(bininfo.Component(), bininfo.VersionOr("unknown"))
+
 	switch len(os.Args) {
 	case 1:
 		usage()
@@ -58,8 +64,4 @@ func main() {
 		usage()
 		os.Exit(1)
 	}
-}
-
-func commandCreateBackup() {
-	logg.Fatal("TODO")
 }

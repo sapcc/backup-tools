@@ -8,9 +8,39 @@ github.com/cespare/xxhash/v2
 ## explicit; go 1.9
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/gophercloud/gophercloud v1.2.0
+## explicit; go 1.14
+github.com/gophercloud/gophercloud
+github.com/gophercloud/gophercloud/openstack
+github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
+github.com/gophercloud/gophercloud/openstack/identity/v2/tokens
+github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/ec2tokens
+github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/oauth1
+github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
+github.com/gophercloud/gophercloud/openstack/utils
+github.com/gophercloud/gophercloud/pagination
+# github.com/gophercloud/utils v0.0.0-20221207145018-e8fba78967ca
+## explicit; go 1.15
+github.com/gophercloud/utils/env
+github.com/gophercloud/utils/gnocchi
+github.com/gophercloud/utils/internal
+github.com/gophercloud/utils/openstack/clientconfig
+# github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
+## explicit
+github.com/jpillora/longestcommon
+# github.com/kr/pretty v0.3.1
+## explicit; go 1.12
+# github.com/majewsky/schwift v1.2.0
+## explicit; go 1.16
+github.com/majewsky/schwift
+github.com/majewsky/schwift/capabilities
+github.com/majewsky/schwift/gopherschwift
 # github.com/matttproud/golang_protobuf_extensions v1.0.4
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/mitchellh/go-homedir v1.1.0
+## explicit
+github.com/mitchellh/go-homedir
 # github.com/ncw/swift v1.0.53
 ## explicit
 github.com/ncw/swift
@@ -32,9 +62,15 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/sapcc/go-api-declarations v1.4.3
+## explicit; go 1.19
+github.com/sapcc/go-api-declarations/bininfo
 # github.com/sapcc/go-bits v0.0.0-20230217073628-aeeff1f2933c
 ## explicit; go 1.19
+github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
+github.com/sapcc/go-bits/must
+github.com/sapcc/go-bits/osext
 # github.com/xtgo/set v1.0.0
 ## explicit
 github.com/xtgo/set
@@ -43,6 +79,13 @@ github.com/xtgo/set
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# golang.org/x/text v0.5.0
+## explicit; go 1.17
+golang.org/x/text/encoding
+golang.org/x/text/encoding/charmap
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/transform
 # google.golang.org/protobuf v1.28.1
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/prototext
@@ -76,3 +119,6 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/urfave/cli.v1 v1.20.0
 ## explicit
 gopkg.in/urfave/cli.v1
+# gopkg.in/yaml.v2 v2.4.0
+## explicit; go 1.15
+gopkg.in/yaml.v2
