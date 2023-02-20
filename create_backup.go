@@ -35,6 +35,7 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/utils/openstack/clientconfig"
+	"github.com/kballard/go-shellquote"
 	"github.com/majewsky/schwift"
 	"github.com/majewsky/schwift/gopherschwift"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -202,7 +203,7 @@ func (cfg backupConfig) createBackup(reason string) (returnedError error) {
 	cmd := exec.Command("psql",
 		"-qAt", "-h", cfg.PgHostname, "-U", cfg.PgUsername, "-c", //NOTE: PGPASSWORD comes via inherited env variable
 		`SELECT datname FROM pg_database WHERE datname !~ '^template|^postgres$'`)
-	logg.Info(">> %s %v", cmd.Path, cmd.Args)
+	logg.Info(">> " + shellquote.Join(cmd.Args...))
 	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()
 	if err != nil {
@@ -224,7 +225,7 @@ func (cfg backupConfig) createBackup(reason string) (returnedError error) {
 			cmd := exec.Command("pg_dump",
 				"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
 				"-c", "--if-exist", "-C", "-Z", "5", databaseName)
-			logg.Info(">> %s %v", cmd.Path, cmd.Args)
+			logg.Info(">> " + shellquote.Join(cmd.Args...))
 			cmd.Stdout = pipeWriter
 			cmd.Stderr = os.Stderr
 			errChan <- cmd.Run()
