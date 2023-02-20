@@ -109,6 +109,7 @@ func commandCreateBackup() {
 	}()
 
 	//serve Prometheus metrics on the main thread
+	prometheus.InitMetrics()
 	http.Handle("/metrics", promhttp.Handler())
 	listenAddr := osext.GetenvOrDefault("BACKUP_METRICS_LISTEN_ADDRESS", ":9188")
 	must.Succeed(httpext.ListenAndServeContext(ctx, listenAddr, nil))
