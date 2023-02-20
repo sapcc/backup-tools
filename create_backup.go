@@ -63,7 +63,7 @@ func commandCreateBackup() {
 		logg.Fatal("malformed value for BACKUP_PGSQL_FULL: %q", os.Getenv("BACKUP_PGSQL_FULL"))
 	}
 	cfg := backupConfig{
-		ObjectNamePrefix: fmt.Sprintf("%s/%s/%s",
+		ObjectNamePrefix: fmt.Sprintf("%s/%s/%s/",
 			osext.MustGetenv("OS_REGION_NAME"),
 			osext.MustGetenv("MY_POD_NAMESPACE"),
 			osext.MustGetenv("MY_POD_NAME"),
@@ -212,18 +212,23 @@ func (cfg backupConfig) createBackup(reason string) (returnedError error) {
 
 	//stream backups from pg_dump into Swift
 	for _, databaseName := range databaseNames {
-		//start pg_dump
+		//NOTE: We need to do this in two separate goroutines because we need to
+		//Close() the writer side in order for LargeObject.Append() to return on
+		//the reader side.
+
+		//run pg_dump
 		pipeReader, pipeWriter := io.Pipe()
-		cmd := exec.Command("pg_dump",
-			"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
-			"-c", "--if-exist", "-C", "-Z", "5", databaseName)
-		logg.Info(">> %s %v", cmd.Path, cmd.Args)
-		cmd.Stdout = pipeWriter
-		cmd.Stderr = os.Stderr
-		err := cmd.Start()
-		if err != nil {
-			return fmt.Errorf("could not start pg_dump: %w", err)
-		}
+		errChan := make(chan error, 1) //must be buffered to ensure that `pipewriter.Close()` runs immediately
+		go func() {
+			defer pipeWriter.Close()
+			cmd := exec.Command("pg_dump",
+				"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
+				"-c", "--if-exist", "-C", "-Z", "5", databaseName)
+			logg.Info(">> %s %v", cmd.Path, cmd.Args)
+			cmd.Stdout = pipeWriter
+			cmd.Stderr = os.Stderr
+			errChan <- cmd.Run()
+		}()
 
 		//upload the outputs of pg_dump into Swift
 		obj := cfg.Container.Object(cfg.ObjectNamePrefix + fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", nowTimeStr, databaseName))
@@ -248,9 +253,9 @@ func (cfg backupConfig) createBackup(reason string) (returnedError error) {
 		}
 
 		//wait for pg_dump to finish
-		err = cmd.Wait()
+		err = <-errChan
 		if err != nil {
-			return fmt.Errorf("pg_dump did not finish successfully: %w", err)
+			return fmt.Errorf("could not run pg_dump: %w", err)
 		}
 	}
 
