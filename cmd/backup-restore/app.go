@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,8 @@ import (
 	"github.com/sapcc/containers/internal/configuration"
 	"github.com/sapcc/containers/internal/swiftcli"
 	"github.com/sapcc/containers/internal/utils"
+	"github.com/sapcc/go-bits/logg"
+	"github.com/sapcc/go-bits/osext"
 )
 
 var (
@@ -338,27 +341,20 @@ func appProcessRestore() error {
 }
 
 func appPgsqlDB(database string) error {
+	pgHostname := osext.GetenvOrDefault("PGSQL_HOST", "default")
+	pgUsername := osext.GetenvOrDefault("PGSQL_USER", "postgres")
+	//NOTE: PGPASSWORD is passed on from our env into the client
 
-	host := "localhost"
-	if os.Getenv("PGSQL_HOST") != "" {
-		host = os.Getenv("PGSQL_HOST")
+	cmd := exec.Command("psql",
+		"-h", pgHostname, "-U", pgUsername, "-a",
+		"-f", fmt.Sprintf("%s/%s.sql", backupPath, database),
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		logg.Fatal(err.Error())
 	}
-
-	user := "postgres"
-	if os.Getenv("PGSQL_USER") != "" {
-		user = os.Getenv("PGSQL_USER")
-	}
-
-	env := []string{}
-	if os.Getenv("PGPASSWORD") != "" {
-		env = append(env, fmt.Sprintf("PGPASSWORD=%s", os.Getenv("PGPASSWORD")))
-	}
-
-	psqlCmd := fmt.Sprintf("psql -U %s -h %s -a -f %s/%s.sql", user, host, backupPath, database)
-	log.Println(psqlCmd)
-
-	out := utils.ExeCmd(psqlCmd, env)
-	fmt.Printf("%s\n", out)
 
 	fmt.Println(">> database restore done: " + database)
 	return nil

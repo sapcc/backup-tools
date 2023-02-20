@@ -2,13 +2,10 @@ package utils
 
 import (
 	"archive/tar"
-	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -31,51 +28,6 @@ var (
 	// List2 global var
 	List2 []string
 )
-
-func ExeCmd(cmd string, env []string) string {
-	//fmt.Println("command is ", cmd)
-	// splitting head => g++ parts => rest of the command
-	parts := strings.Fields(cmd)
-	head := parts[0]
-	parts = parts[1:]
-	//fmt.Printf("in all caps: %q - %q\n", head, parts)
-
-	cmdExec := exec.Command(head, parts...)
-	var out bytes.Buffer
-	cmdExec.Stdout = &out
-
-	if len(env) > 0 {
-		cmdExec.Env = env
-	}
-
-	err := cmdExec.Run()
-	if err != nil {
-		log.Fatal(err, out.String())
-	}
-	//fmt.Printf("in all caps: %q\n", out.String())
-
-	return out.String()
-}
-
-func ExeCmdBashC(cmd string) string {
-	//fmt.Println("command is ", cmd)
-	// splitting head => g++ parts => rest of the command
-	parts := "-c"
-	head := "bash"
-	//fmt.Printf("in all caps: %q - %q\n", head, parts)
-
-	cmdExec := exec.Command(head, parts, cmd)
-	var out bytes.Buffer
-	cmdExec.Stdout = &out
-
-	err := cmdExec.Run()
-	if err != nil {
-		log.Fatal(err, out.String())
-	}
-	//fmt.Printf("in all caps: %q\n", out.String())
-
-	return out.String()
-}
 
 func DeleteEmpty(s []string) []string {
 	var r []string
