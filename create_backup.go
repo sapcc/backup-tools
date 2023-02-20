@@ -69,8 +69,8 @@ func commandCreateBackup() {
 			osext.MustGetenv("MY_POD_NAME"),
 		),
 		Interval:   interval,
-		PgHostname: osext.MustGetenv("PGSQL_HOST"),
-		PgUsername: osext.MustGetenv("PGSQL_USER"),
+		PgHostname: osext.GetenvOrDefault("PGSQL_HOST", "localhost"),
+		PgUsername: osext.GetenvOrDefault("PGSQL_USER", "postgres"),
 	}
 
 	//connect to Swift

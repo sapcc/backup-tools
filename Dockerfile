@@ -34,7 +34,6 @@ RUN mkdir /backup \
 	&& test -x /usr/bin/pg_dump
 
 COPY --from=gobuilder /pkg/bin/ /usr/local/sbin/
-COPY ./cmd/backup-run/db-backup.sh /usr/local/sbin/db-backup.sh
 
 VOLUME ["/backup"]
-CMD ["/usr/local/sbin/backup-run"]
+CMD ["/usr/local/sbin/backup-tools", "create"]
