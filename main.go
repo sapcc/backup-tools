@@ -49,13 +49,13 @@ func main() {
 		case "create": //NOTE: This subcommand is not shown in usage() because it's not meant for interactive use.
 			commandCreateBackup()
 		case "restore":
-			logg.Fatal("TODO")
+			logg.Fatal("not implemented yet, please use `backup-restore` for now") //TODO
 		case "restore-crossregion":
-			logg.Fatal("TODO")
+			logg.Fatal("not implemented yet, please use `backup-restore` for now") //TODO
 		case "credentials":
-			logg.Fatal("TODO")
+			logg.Fatal("not implemented yet, please use `backup-restore` for now") //TODO
 		case "manual":
-			logg.Fatal("TODO")
+			logg.Fatal("not implemented yet, please use `backup-restore` for now") //TODO
 		default: //invalid subcommand
 			usage()
 			os.Exit(1)

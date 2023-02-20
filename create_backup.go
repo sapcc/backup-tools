@@ -26,8 +26,10 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gophercloud/gophercloud"
@@ -43,15 +45,42 @@ import (
 	"github.com/sapcc/go-bits/osext"
 )
 
+type backupConfig struct {
+	Container        *schwift.Container
+	SegmentContainer *schwift.Container
+	ObjectNamePrefix string
+	Interval         time.Duration
+	PgHostname       string
+	PgUsername       string
+}
+
 func commandCreateBackup() {
 	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
 
+	//read configration from environment
+	interval, err := time.ParseDuration(osext.MustGetenv("BACKUP_PGSQL_FULL"))
+	if err != nil {
+		logg.Fatal("malformed value for BACKUP_PGSQL_FULL: %q", os.Getenv("BACKUP_PGSQL_FULL"))
+	}
+	cfg := backupConfig{
+		ObjectNamePrefix: fmt.Sprintf("%s/%s/%s",
+			osext.MustGetenv("OS_REGION_NAME"),
+			osext.MustGetenv("MY_POD_NAMESPACE"),
+			osext.MustGetenv("MY_POD_NAME"),
+		),
+		Interval:   interval,
+		PgHostname: osext.MustGetenv("PGSQL_HOST"),
+		PgUsername: osext.MustGetenv("PGSQL_USER"),
+	}
+
 	//connect to Swift
 	account := must.Return(connectToLocalSwift())
-	container := account.Container("db_backup")
-	segmentContainer := account.Container("db_backup_segments")
+	cfg.Container = account.Container("db_backup")
+	cfg.SegmentContainer = account.Container("db_backup_segments")
 
-	//TODO: listen for SIGUSR1, force backup immediately on receive
+	//listen to SIGUSR1 (this signal causes a backup to be created immediately, regardless of schedule)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGUSR1)
 
 	//fork off the main loop
 	var wg sync.WaitGroup
@@ -65,7 +94,12 @@ func commandCreateBackup() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				err := createBackupIfNecessary(container, segmentContainer)
+				err := cfg.createBackupIfNecessary()
+				if err != nil {
+					logg.Error(err.Error())
+				}
+			case <-signalChan:
+				err := cfg.createBackup("because of user request (SIGUSR1)")
 				if err != nil {
 					logg.Error(err.Error())
 				}
@@ -118,30 +152,38 @@ const (
 	retentionTime time.Duration = 10 * 24 * time.Hour // 10 days
 )
 
-func createBackupIfNecessary(container, segmentContainer *schwift.Container) (returnedError error) {
-	//read required configuration from env
-	objectNamePrefix := fmt.Sprintf("%s/%s/%s",
-		osext.MustGetenv("OS_REGION_NAME"),
-		osext.MustGetenv("MY_POD_NAMESPACE"),
-		osext.MustGetenv("MY_POD_NAME"),
-	)
-	interval, err := time.ParseDuration(osext.MustGetenv("BACKUP_PGSQL_FULL"))
-	if err != nil {
-		logg.Fatal("malformed value for BACKUP_PGSQL_FULL: %q", os.Getenv("BACKUP_PGSQL_FULL"))
-	}
-	pgHost := osext.MustGetenv("PGSQL_HOST")
-	pgUser := osext.MustGetenv("PGSQL_USER")
-
+func (cfg backupConfig) createBackupIfNecessary() error {
 	//check last_backup_timestamp to see if a backup is needed
-	lastTimeObj := container.Object(objectNamePrefix + "last_backup_timestamp")
+	lastTimeObj := cfg.Container.Object(cfg.ObjectNamePrefix + "last_backup_timestamp")
 	lastTime, err := readLastBackupTimestamp(lastTimeObj)
 	if err != nil {
 		return err
 	}
-	if lastTime.Add(interval).After(time.Now()) {
+	if lastTime.Add(cfg.Interval).After(time.Now()) {
 		return nil
 	}
 
+	return cfg.createBackup("because of schedule")
+}
+
+func readLastBackupTimestamp(obj *schwift.Object) (time.Time, error) {
+	str, err := obj.Download(nil).AsString()
+	if err != nil {
+		if schwift.Is(err, http.StatusNotFound) {
+			//this branch is esp. relevant for the first ever backup -> we just report a very old last backup to force a backup immediately
+			return time.Unix(0, 0).UTC(), nil
+		}
+		return time.Time{}, err
+	}
+	t, err := time.Parse(backupTimeFormat, str)
+	if err != nil {
+		//recover from malformed timestamp files by forcing a new backup immediately, same as above
+		return time.Unix(0, 0).UTC(), nil
+	}
+	return t, nil
+}
+
+func (cfg backupConfig) createBackup(reason string) (returnedError error) {
 	//track metrics for this backup
 	nowTime := time.Now()
 	nowTimeStr := nowTime.Format(backupTimeFormat)
@@ -154,11 +196,11 @@ func createBackupIfNecessary(container, segmentContainer *schwift.Container) (re
 		}
 		prometheus.Finish()
 	}()
-	logg.Info("creating backup %s%s...", objectNamePrefix, nowTimeStr)
+	logg.Info("creating backup %s%s %s...", cfg.ObjectNamePrefix, nowTimeStr, reason)
 
 	//enumerate databases that need to be backed up
 	cmd := exec.Command("psql",
-		"-qAt", "-h", pgHost, "-U", pgUser, "-c", //NOTE: PGPASSWORD comes via inherited env variable
+		"-qAt", "-h", cfg.PgHostname, "-U", cfg.PgUsername, "-c", //NOTE: PGPASSWORD comes via inherited env variable
 		`SELECT datname FROM pg_database WHERE datname !~ '^template|^postgres$'`)
 	logg.Info(">> %s %v", cmd.Path, cmd.Args)
 	cmd.Stderr = os.Stderr
@@ -173,7 +215,7 @@ func createBackupIfNecessary(container, segmentContainer *schwift.Container) (re
 		//start pg_dump
 		pipeReader, pipeWriter := io.Pipe()
 		cmd := exec.Command("pg_dump",
-			"-h", pgHost, "-U", pgUser, //NOTE: PGPASSWORD comes via inherited env variable
+			"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
 			"-c", "--if-exist", "-C", "-Z", "5", databaseName)
 		logg.Info(">> %s %v", cmd.Path, cmd.Args)
 		cmd.Stdout = pipeWriter
@@ -184,10 +226,10 @@ func createBackupIfNecessary(container, segmentContainer *schwift.Container) (re
 		}
 
 		//upload the outputs of pg_dump into Swift
-		obj := container.Object(objectNamePrefix + fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", nowTimeStr, databaseName))
+		obj := cfg.Container.Object(cfg.ObjectNamePrefix + fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", nowTimeStr, databaseName))
 		lo, err := obj.AsNewLargeObject(schwift.SegmentingOptions{
 			Strategy:         schwift.StaticLargeObject,
-			SegmentContainer: segmentContainer,
+			SegmentContainer: cfg.SegmentContainer,
 		}, nil)
 		if err != nil {
 			return fmt.Errorf("could not start upload into Swift: %w", err)
@@ -213,27 +255,11 @@ func createBackupIfNecessary(container, segmentContainer *schwift.Container) (re
 	}
 
 	//write last_backup_timestamp to indicate that this backup is completed successfully
+	lastTimeObj := cfg.Container.Object(cfg.ObjectNamePrefix + "last_backup_timestamp")
 	err = lastTimeObj.Upload(strings.NewReader(nowTimeStr), nil, nil)
 	if err != nil {
 		return fmt.Errorf("could not write last_backup_timestamp into Swift: %w", err)
 	}
 	logg.Info(">> done")
 	return nil
-}
-
-func readLastBackupTimestamp(obj *schwift.Object) (time.Time, error) {
-	str, err := obj.Download(nil).AsString()
-	if err != nil {
-		if schwift.Is(err, http.StatusNotFound) {
-			//this branch is esp. relevant for the first ever backup -> we just report a very old last backup to force a backup immediately
-			return time.Unix(0, 0).UTC(), nil
-		}
-		return time.Time{}, err
-	}
-	t, err := time.Parse(backupTimeFormat, str)
-	if err != nil {
-		//recover from malformed timestamp files by forcing a new backup immediately, same as above
-		return time.Unix(0, 0).UTC(), nil
-	}
-	return t, nil
 }
