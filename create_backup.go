@@ -162,6 +162,7 @@ func (cfg backupConfig) createBackupIfNecessary() error {
 		return err
 	}
 	if lastTime.Add(cfg.Interval).After(time.Now()) {
+		prometheus.SetSuccess(lastTime)
 		return nil
 	}
 
