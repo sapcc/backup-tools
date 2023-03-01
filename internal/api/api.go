@@ -26,6 +26,7 @@ import (
 	"github.com/sapcc/containers/internal/backup"
 	"github.com/sapcc/containers/internal/core"
 	"github.com/sapcc/go-bits/httpapi"
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/respondwith"
 )
 
@@ -37,6 +38,19 @@ type API struct {
 // AddTo implements the httpapi.API interface.
 func (a API) AddTo(r *mux.Router) {
 	r.Methods("GET").Path("/v1/status").HandlerFunc(a.handleGetStatus)
+	r.Methods("POST").Path("/v1/backup-now").HandlerFunc(a.handlePostBackupNow)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GET /v1/status
+
+type timestamp struct {
+	Timestamp string `json:"timestamp"`
+	Unix      int64  `json:"unix"`
+}
+
+type statusResponse struct {
+	LastBackup timestamp `json:"last_backup"`
 }
 
 func (a API) handleGetStatus(w http.ResponseWriter, r *http.Request) {
@@ -47,10 +61,28 @@ func (a API) handleGetStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondwith.JSON(w, http.StatusOK, map[string]any{
-		"last_backup": map[string]any{
-			"timestamp": lastTime.Format(backup.TimeFormat),
-			"unix":      lastTime.Unix(),
+	respondwith.JSON(w, http.StatusOK, statusResponse{
+		LastBackup: timestamp{
+			Timestamp: lastTime.Format(backup.TimeFormat),
+			Unix:      lastTime.Unix(),
 		},
+	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// POST /v1/backup-now
+
+func (a API) handlePostBackupNow(w http.ResponseWriter, r *http.Request) {
+	httpapi.IdentifyEndpoint(r, "/v1/backup-now")
+
+	backupTime, err := backup.Create(a.Config, "because of user request")
+	if respondwith.ErrorText(w, err) {
+		logg.Error(err.Error()) //also ensure that the container log is complete
+		return
+	}
+
+	respondwith.JSON(w, http.StatusOK, timestamp{
+		Timestamp: backupTime.Format(backup.TimeFormat),
+		Unix:      backupTime.Unix(),
 	})
 }

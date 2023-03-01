@@ -55,9 +55,9 @@ const (
 
 // Create creates a backup unconditionally. The provided `reason` is used
 // in log messages to explain why the backup was created.
-func Create(cfg *core.Configuration, reason string) (returnedError error) {
+func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returnedError error) {
 	//track metrics for this backup
-	nowTime := time.Now()
+	nowTime = time.Now()
 	nowTimeStr := nowTime.Format(TimeFormat)
 	defer func() {
 		if returnedError == nil {
@@ -74,7 +74,7 @@ func Create(cfg *core.Configuration, reason string) (returnedError error) {
 	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("could not enumerate databases with psql: %w", err)
+		return nowTime, fmt.Errorf("could not enumerate databases with psql: %w", err)
 	}
 	databaseNames := strings.Fields(string(output))
 
@@ -111,36 +111,36 @@ func Create(cfg *core.Configuration, reason string) (returnedError error) {
 			SegmentContainer: cfg.SegmentContainer,
 		}, nil)
 		if err != nil {
-			return fmt.Errorf("could not start upload into Swift: %w", err)
+			return nowTime, fmt.Errorf("could not start upload into Swift: %w", err)
 		}
 
 		hdr := schwift.NewObjectHeaders()
 		hdr.ExpiresAt().Set(nowTime.Add(retentionTime))
 		err = lo.Append(pipeReader, uploadSegmentSize, hdr.ToOpts())
 		if err != nil {
-			return fmt.Errorf("could not write into Swift: %w", err)
+			return nowTime, fmt.Errorf("could not write into Swift: %w", err)
 		}
 
 		err = lo.WriteManifest(hdr.ToOpts())
 		if err != nil {
-			return fmt.Errorf("could not finalize upload into Swift: %w", err)
+			return nowTime, fmt.Errorf("could not finalize upload into Swift: %w", err)
 		}
 
 		//wait for pg_dump to finish
 		err = <-errChan
 		if err != nil {
-			return fmt.Errorf("could not run pg_dump: %w", err)
+			return nowTime, fmt.Errorf("could not run pg_dump: %w", err)
 		}
 	}
 
 	//write last_backup_timestamp to indicate that this backup is completed successfully
 	err = WriteLastBackupTimestamp(cfg, nowTime)
 	if err != nil {
-		return err
+		return nowTime, err
 	}
 
 	logg.Info(">> done")
-	return nil
+	return
 }
 
 // CreateIfNecessary creates a backup if the schedule demands it.
@@ -158,5 +158,6 @@ func CreateIfNecessary(cfg *core.Configuration) error {
 		return nil
 	}
 
-	return Create(cfg, "because of schedule")
+	_, err = Create(cfg, "because of schedule")
+	return err
 }

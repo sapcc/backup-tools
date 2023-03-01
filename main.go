@@ -67,7 +67,7 @@ func main() {
 					logg.Error(err.Error())
 				}
 			case <-signalChan:
-				err := backup.Create(cfg, "because of user request (SIGUSR1)")
+				_, err := backup.Create(cfg, "because of user request (SIGUSR1)")
 				if err != nil {
 					logg.Error(err.Error())
 				}
