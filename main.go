@@ -31,7 +31,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sapcc/containers/internal/backup"
 	"github.com/sapcc/containers/internal/core"
-	"github.com/sapcc/containers/internal/prometheus"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
@@ -75,7 +74,6 @@ func main() {
 	}()
 
 	//serve Prometheus metrics on the main thread
-	prometheus.InitMetrics()
 	http.Handle("/metrics", promhttp.Handler())
 	must.Succeed(httpext.ListenAndServeContext(ctx, cfg.ListenAddress, nil))
 

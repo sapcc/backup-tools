@@ -29,10 +29,19 @@ import (
 
 	"github.com/kballard/go-shellquote"
 	"github.com/majewsky/schwift"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sapcc/containers/internal/core"
-	"github.com/sapcc/containers/internal/prometheus"
 	"github.com/sapcc/go-bits/logg"
 )
+
+var backupLastSuccessGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+	Name: "backup_last_success",
+	Help: "Unix Timestamp of last successful backup run",
+})
+
+func init() {
+	prometheus.MustRegister(backupLastSuccessGauge)
+}
 
 const (
 	// A time format corresponding to YYYYMMDDHHMM without any separator chars.
@@ -51,7 +60,7 @@ func Create(cfg *core.Configuration, reason string) (returnedError error) {
 	nowTimeStr := nowTime.Format(TimeFormat)
 	defer func() {
 		if returnedError == nil {
-			prometheus.SetSuccess(nowTime)
+			backupLastSuccessGauge.Set(float64(nowTime.Unix()))
 		}
 	}()
 	logg.Info("creating backup %s%s %s...", cfg.ObjectNamePrefix, nowTimeStr, reason)
@@ -135,7 +144,10 @@ func CreateIfNecessary(cfg *core.Configuration) error {
 		return err
 	}
 	if lastTime.Add(cfg.Interval).After(time.Now()) {
-		prometheus.SetSuccess(lastTime)
+		//even if there is no work to do, we update the backup_last_success metric
+		//to an accurate value (this is required after application startup to have
+		//a useful metric value before the first scheduled backup)
+		backupLastSuccessGauge.Set(float64(lastTime.Unix()))
 		return nil
 	}
 
