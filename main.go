@@ -133,14 +133,10 @@ func createBackup(cfg *core.Configuration, reason string) (returnedError error) 
 	//track metrics for this backup
 	nowTime := time.Now()
 	nowTimeStr := nowTime.Format(backupTimeFormat)
-	prometheus.Begin()
 	defer func() {
 		if returnedError == nil {
 			prometheus.SetSuccess(nowTime)
-		} else {
-			prometheus.SetError()
 		}
-		prometheus.Finish()
 	}()
 	logg.Info("creating backup %s%s %s...", cfg.ObjectNamePrefix, nowTimeStr, reason)
 
