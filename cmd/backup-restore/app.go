@@ -16,9 +16,9 @@ import (
 	"github.com/ncw/swift"
 	"gopkg.in/urfave/cli.v1"
 
-	"github.com/sapcc/containers/internal/configuration"
-	"github.com/sapcc/containers/internal/swiftcli"
-	"github.com/sapcc/containers/internal/utils"
+	"github.com/sapcc/containers/internal/old/configuration"
+	"github.com/sapcc/containers/internal/old/swiftcli"
+	"github.com/sapcc/containers/internal/old/utils"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/osext"
 )

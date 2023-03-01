@@ -17,8 +17,8 @@ import (
 
 	"github.com/ncw/swift"
 
-	"github.com/sapcc/containers/internal/configuration"
-	"github.com/sapcc/containers/internal/utils"
+	"github.com/sapcc/containers/internal/old/configuration"
+	"github.com/sapcc/containers/internal/old/utils"
 )
 
 // SwiftConnection connect swift
