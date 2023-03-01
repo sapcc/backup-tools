@@ -75,19 +75,27 @@ func main() {
 		}
 	}()
 
+	//serve Prometheus metrics on another goroutine (this needs to be separate
+	//from the rest of the HTTP API because the metrics port is exposed to
+	//outside the container)
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		must.Succeed(httpext.ListenAndServeContext(ctx, ":9188", mux))
+	}()
+
 	//serve the HTTP API on the main thread
 	//
-	//NOTE: The API does not do any authentication at all, and that's okay
-	//because this API listens on 127.0.0.1 only. Therefore you can only access
-	//it via `kubectl exec` or `kubectl port-forward`.
+	//NOTE: This API does not do any authentication at all, and that's okay
+	//because it listens on 127.0.0.1 only. Therefore you can only access it via
+	//`kubectl exec` or `kubectl port-forward`.
 	handler := httpapi.Compose(
 		api.API{Config: cfg},
 		httpapi.HealthCheckAPI{SkipRequestLog: true},
 	)
-	http.Handle("/", handler)
-	http.Handle("/metrics", promhttp.Handler())
-	must.Succeed(httpext.ListenAndServeContext(ctx, "127.0.0.1:9188", nil))
+	must.Succeed(httpext.ListenAndServeContext(ctx, "127.0.0.1:8080", handler))
 
-	//on SIGINT/SIGTERM, give the backup main loop a chance to complete a backup that's currently in flight
+	//on SIGINT/SIGTERM, give the backup main loop a chance to complete a backup
+	//that's currently in flight
 	wg.Wait()
 }
