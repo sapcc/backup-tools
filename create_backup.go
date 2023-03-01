@@ -32,52 +32,19 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/utils/openstack/clientconfig"
 	"github.com/kballard/go-shellquote"
 	"github.com/majewsky/schwift"
-	"github.com/majewsky/schwift/gopherschwift"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sapcc/containers/internal/core"
 	"github.com/sapcc/containers/internal/prometheus"
 	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/must"
-	"github.com/sapcc/go-bits/osext"
 )
-
-type backupConfig struct {
-	Container        *schwift.Container
-	SegmentContainer *schwift.Container
-	ObjectNamePrefix string
-	Interval         time.Duration
-	PgHostname       string
-	PgUsername       string
-}
 
 func commandCreateBackup() {
 	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
-
-	//read configration from environment
-	interval, err := time.ParseDuration(osext.MustGetenv("BACKUP_PGSQL_FULL"))
-	if err != nil {
-		logg.Fatal("malformed value for BACKUP_PGSQL_FULL: %q", os.Getenv("BACKUP_PGSQL_FULL"))
-	}
-	cfg := backupConfig{
-		ObjectNamePrefix: fmt.Sprintf("%s/%s/%s/",
-			osext.MustGetenv("OS_REGION_NAME"),
-			osext.MustGetenv("MY_POD_NAMESPACE"),
-			osext.MustGetenv("MY_POD_NAME"),
-		),
-		Interval:   interval,
-		PgHostname: osext.GetenvOrDefault("PGSQL_HOST", "localhost"),
-		PgUsername: osext.GetenvOrDefault("PGSQL_USER", "postgres"),
-	}
-
-	//connect to Swift
-	account := must.Return(connectToLocalSwift())
-	cfg.Container = account.Container("db_backup")
-	cfg.SegmentContainer = account.Container("db_backup_segments")
+	cfg := must.Return(core.NewConfiguration())
 
 	//listen to SIGUSR1 (this signal causes a backup to be created immediately, regardless of schedule)
 	signalChan := make(chan os.Signal, 1)
@@ -95,12 +62,12 @@ func commandCreateBackup() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				err := cfg.createBackupIfNecessary()
+				err := createBackupIfNecessary(cfg)
 				if err != nil {
 					logg.Error(err.Error())
 				}
 			case <-signalChan:
-				err := cfg.createBackup("because of user request (SIGUSR1)")
+				err := createBackup(cfg, "because of user request (SIGUSR1)")
 				if err != nil {
 					logg.Error(err.Error())
 				}
@@ -111,38 +78,10 @@ func commandCreateBackup() {
 	//serve Prometheus metrics on the main thread
 	prometheus.InitMetrics()
 	http.Handle("/metrics", promhttp.Handler())
-	listenAddr := osext.GetenvOrDefault("BACKUP_METRICS_LISTEN_ADDRESS", ":9188")
-	must.Succeed(httpext.ListenAndServeContext(ctx, listenAddr, nil))
+	must.Succeed(httpext.ListenAndServeContext(ctx, cfg.ListenAddress, nil))
 
 	//on SIGINT/SIGTERM, give the backup main loop a chance to complete a backup that's currently in flight
 	wg.Wait()
-}
-
-func connectToLocalSwift() (*schwift.Account, error) {
-	//initialize connection to Swift
-	ao, err := clientconfig.AuthOptions(nil)
-	if err != nil {
-		return nil, fmt.Errorf("cannot find OpenStack credentials: %w", err)
-	}
-	ao.AllowReauth = true
-	provider, err := openstack.AuthenticatedClient(*ao)
-	if err != nil {
-		return nil, fmt.Errorf("cannot connect to OpenStack: %w", err)
-	}
-	eo := gophercloud.EndpointOpts{
-		//note that empty values are acceptable in these two fields (but OS_REGION_NAME is strictly required elsewhere)
-		Region:       os.Getenv("OS_REGION_NAME"),
-		Availability: gophercloud.Availability(os.Getenv("OS_INTERFACE")),
-	}
-	client, err := openstack.NewObjectStorageV1(provider, eo)
-	if err != nil {
-		return nil, fmt.Errorf("cannot connect to Swift: %w", err)
-	}
-	account, err := gopherschwift.Wrap(client, nil)
-	if err != nil {
-		return nil, fmt.Errorf("cannot connect to Swift: %w", err)
-	}
-	return account, nil
 }
 
 const (
@@ -154,7 +93,7 @@ const (
 	retentionTime time.Duration = 10 * 24 * time.Hour // 10 days
 )
 
-func (cfg backupConfig) createBackupIfNecessary() error {
+func createBackupIfNecessary(cfg *core.Configuration) error {
 	//check last_backup_timestamp to see if a backup is needed
 	lastTimeObj := cfg.Container.Object(cfg.ObjectNamePrefix + "last_backup_timestamp")
 	lastTime, err := readLastBackupTimestamp(lastTimeObj)
@@ -166,7 +105,7 @@ func (cfg backupConfig) createBackupIfNecessary() error {
 		return nil
 	}
 
-	return cfg.createBackup("because of schedule")
+	return createBackup(cfg, "because of schedule")
 }
 
 func readLastBackupTimestamp(obj *schwift.Object) (time.Time, error) {
@@ -186,7 +125,7 @@ func readLastBackupTimestamp(obj *schwift.Object) (time.Time, error) {
 	return t, nil
 }
 
-func (cfg backupConfig) createBackup(reason string) (returnedError error) {
+func createBackup(cfg *core.Configuration, reason string) (returnedError error) {
 	//track metrics for this backup
 	nowTime := time.Now()
 	nowTimeStr := nowTime.Format(backupTimeFormat)
