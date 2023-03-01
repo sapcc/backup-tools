@@ -41,8 +41,6 @@ type Configuration struct {
 	ObjectNamePrefix string
 	//backup schedule
 	Interval time.Duration
-	//HTTP server configuration
-	ListenAddress string
 	//configuration for connection to Postgres
 	PgHostname string
 	PgUsername string
@@ -83,9 +81,8 @@ func NewConfiguration() (*Configuration, error) {
 			osext.MustGetenv("MY_POD_NAMESPACE"),
 			osext.MustGetenv("MY_POD_NAME"),
 		),
-		ListenAddress: osext.GetenvOrDefault("BACKUP_METRICS_LISTEN_ADDRESS", ":9188"),
-		PgHostname:    osext.GetenvOrDefault("PGSQL_HOST", "localhost"),
-		PgUsername:    osext.GetenvOrDefault("PGSQL_USER", "postgres"),
+		PgHostname: osext.GetenvOrDefault("PGSQL_HOST", "localhost"),
+		PgUsername: osext.GetenvOrDefault("PGSQL_USER", "postgres"),
 	}
 
 	//read additional environment variables

@@ -25,6 +25,9 @@ github.com/gophercloud/utils/env
 github.com/gophercloud/utils/gnocchi
 github.com/gophercloud/utils/internal
 github.com/gophercloud/utils/openstack/clientconfig
+# github.com/gorilla/mux v1.8.0
+## explicit; go 1.12
+github.com/gorilla/mux
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 ## explicit
 github.com/jpillora/longestcommon
@@ -79,10 +82,12 @@ github.com/prometheus/procfs/internal/util
 github.com/sapcc/go-api-declarations/bininfo
 # github.com/sapcc/go-bits v0.0.0-20230224132913-e0c607476181
 ## explicit; go 1.19
+github.com/sapcc/go-bits/httpapi
 github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
 github.com/sapcc/go-bits/must
 github.com/sapcc/go-bits/osext
+github.com/sapcc/go-bits/respondwith
 # github.com/xtgo/set v1.0.0
 ## explicit
 github.com/xtgo/set

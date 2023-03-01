@@ -29,9 +29,11 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sapcc/containers/internal/api"
 	"github.com/sapcc/containers/internal/backup"
 	"github.com/sapcc/containers/internal/core"
 	"github.com/sapcc/go-api-declarations/bininfo"
+	"github.com/sapcc/go-bits/httpapi"
 	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/must"
@@ -73,9 +75,18 @@ func main() {
 		}
 	}()
 
-	//serve Prometheus metrics on the main thread
+	//serve the HTTP API on the main thread
+	//
+	//NOTE: The API does not do any authentication at all, and that's okay
+	//because this API listens on 127.0.0.1 only. Therefore you can only access
+	//it via `kubectl exec` or `kubectl port-forward`.
+	handler := httpapi.Compose(
+		api.API{Config: cfg},
+		httpapi.HealthCheckAPI{SkipRequestLog: true},
+	)
+	http.Handle("/", handler)
 	http.Handle("/metrics", promhttp.Handler())
-	must.Succeed(httpext.ListenAndServeContext(ctx, cfg.ListenAddress, nil))
+	must.Succeed(httpext.ListenAndServeContext(ctx, "127.0.0.1:9188", nil))
 
 	//on SIGINT/SIGTERM, give the backup main loop a chance to complete a backup that's currently in flight
 	wg.Wait()
