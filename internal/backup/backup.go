@@ -20,6 +20,7 @@
 package backup
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -77,6 +78,12 @@ func Create(cfg *core.Configuration, reason string) (returnedError error) {
 	}
 	databaseNames := strings.Fields(string(output))
 
+	//this context will be given to child processes to ensure that they get
+	//cleaned up properly in case of unexpected errors (esp. network errors when
+	//uploading to Swift)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	//stream backups from pg_dump into Swift
 	for _, databaseName := range databaseNames {
 		//NOTE: We need to do this in two separate goroutines because we need to
@@ -88,7 +95,7 @@ func Create(cfg *core.Configuration, reason string) (returnedError error) {
 		errChan := make(chan error, 1) //must be buffered to ensure that `pipewriter.Close()` runs immediately
 		go func() {
 			defer pipeWriter.Close()
-			cmd := exec.Command("pg_dump",
+			cmd := exec.CommandContext(ctx, "pg_dump",
 				"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
 				"-c", "--if-exist", "-C", "-Z", "5", databaseName)
 			logg.Info(">> " + shellquote.Join(cmd.Args...))
