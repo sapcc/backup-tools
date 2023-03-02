@@ -12,7 +12,6 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sapcc/go-api-declarations v1.4.3
 	github.com/sapcc/go-bits v0.0.0-20230224132913-e0c607476181
-	github.com/xtgo/set v1.0.0
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
 

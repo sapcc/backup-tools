@@ -196,7 +196,7 @@ func appQuest1(full bool) error {
 		return cli.NewExitError("-- E: 200.050 --", 12)
 	}
 
-	utils.List2 = utils.MakePrefixPathOnly(utils.DeleteNoGzSuffix(utils.DeleteEmpty(utils.List)))
+	utils.List2 = utils.SortedUniqDirnames(utils.FilterGzFiles(utils.List))
 
 	// Last 5 Backup List of backups
 	if !full {
@@ -220,7 +220,7 @@ func appQuest1(full bool) error {
 
 		if myStr[3] != "" {
 			t, _ := time.Parse(configuration.LongDateForm, myStr[3])
-			fmt.Println(utils.LeftPad(strconv.Itoa(id+1), 3, "0"), ") ", myStr[0], "/", myStr[1], "/", myStr[2], " at ", t)
+			fmt.Printf("%03d) %s/%s/%s at %s", id+1, myStr[0], myStr[1], myStr[2], t)
 		}
 	}
 

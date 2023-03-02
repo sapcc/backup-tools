@@ -88,9 +88,6 @@ github.com/sapcc/go-bits/logg
 github.com/sapcc/go-bits/must
 github.com/sapcc/go-bits/osext
 github.com/sapcc/go-bits/respondwith
-# github.com/xtgo/set v1.0.0
-## explicit
-github.com/xtgo/set
 # golang.org/x/sys v0.3.0
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
