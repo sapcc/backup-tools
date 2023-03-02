@@ -1,9 +1,7 @@
 package utils
 
 import (
-	"archive/tar"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -78,133 +76,6 @@ func times(str string, n int) (out string) {
 // len may be exceeded if
 func LeftPad(str string, len int, pad string) string {
 	return times(pad, len-utf8.RuneCountInString(str)) + str
-}
-
-func Tarit(source, target string) error {
-	filename := filepath.Base(source)
-	target = filepath.Join(target, fmt.Sprintf("%s.tar", filename))
-	tarfile, err := os.Create(target)
-	if err != nil {
-		return err
-	}
-	defer tarfile.Close()
-
-	tarball := tar.NewWriter(tarfile)
-	defer tarball.Close()
-
-	info, err := os.Stat(source)
-	if err != nil {
-		return nil
-	}
-
-	var baseDir string
-	if info.IsDir() {
-		baseDir = filepath.Base(source)
-	}
-
-	return filepath.Walk(source,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			var header *tar.Header
-			header, err = tar.FileInfoHeader(info, info.Name())
-			if err != nil {
-				return err
-			}
-
-			if baseDir != "" {
-				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-			}
-
-			if err = tarball.WriteHeader(header); err != nil {
-				return err
-			}
-
-			if info.IsDir() {
-				return nil
-			}
-
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-			_, err = io.Copy(tarball, file)
-			return err
-		})
-}
-
-func Untar(tarball, target string) error {
-	return untar2Wrapped(tarball, target, false)
-}
-
-func UntarSplit(tarball, target string) error {
-	return untar2Wrapped(tarball, target, true)
-}
-
-func untar2Wrapped(tarball, target string, strip bool) error {
-	reader, err := os.Open(tarball)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-	tarReader := tar.NewReader(reader)
-
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-		fname := header.Name
-		if strip {
-			fname = strings.TrimPrefix(fname, "/backup/pgsql/base/")
-			fname = strings.TrimPrefix(fname, "backup/pgsql/base/")
-		}
-		path := filepath.Join(target, fname)
-		info := header.FileInfo()
-		if info.IsDir() {
-			if err = os.MkdirAll(path, info.Mode()); err != nil {
-				return err
-			}
-			continue
-		}
-
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-		_, err = io.Copy(file, tarReader)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func Gzipit(source, target string) error {
-	reader, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-
-	filename := filepath.Base(source)
-	target = filepath.Join(target, fmt.Sprintf("%s.gz", filename))
-	writer, err := os.Create(target)
-	if err != nil {
-		return err
-	}
-	defer writer.Close()
-
-	archiver := gzip.NewWriter(writer)
-	archiver.Name = filename
-	defer archiver.Close()
-
-	_, err = io.Copy(archiver, reader)
-	return err
 }
 
 func Ungzip(source, target string) error {
