@@ -67,9 +67,8 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 	logg.Info("creating backup %s%s %s...", cfg.ObjectNamePrefix, nowTimeStr, reason)
 
 	//enumerate databases that need to be backed up
-	cmd := exec.Command("psql",
-		"-qAt", "-h", cfg.PgHostname, "-U", cfg.PgUsername, "-c", //NOTE: PGPASSWORD comes via inherited env variable
-		`SELECT datname FROM pg_database WHERE datname !~ '^template|^postgres$'`)
+	query := `SELECT datname FROM pg_database WHERE datname !~ '^template|^postgres$'`
+	cmd := exec.Command("psql", cfg.ArgsForPsql("-t", "-c", query)...)
 	logg.Info(">> " + shellquote.Join(cmd.Args...))
 	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()

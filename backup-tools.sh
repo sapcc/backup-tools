@@ -4,9 +4,10 @@ set -euo pipefail
 
 usage() {
   printf '\n'
-  printf 'USAGE: %s status      - Report the internal status of the backup process.\n' "$0"
-  printf '       %s create-now  - Create a backup immediately, outside the usual schedule.\n' "$0"
-  printf '       %s list        - List backups that we can restore from.\n' "$0"
+  printf 'USAGE: %s status        - Report the internal status of the backup process.\n' "$0"
+  printf '       %s create-now    - Create a backup immediately, outside the usual schedule.\n' "$0"
+  printf '       %s list          - List backups that we can restore from.\n' "$0"
+  printf '       %s restore <id>  - Restore a backup using an ID from the "list" command.\n' "$0"
   printf '\n'
 }
 
@@ -47,10 +48,19 @@ cmd_list() {
   printf '\n'
 }
 
+cmd_restore() {
+  BACKUP_ID="$1"
+  if [ "$BACKUP_ID" = "unset" ]; then
+    usage && exit 1
+  fi
+  do_curl POST "/v1/restore/${BACKUP_ID}"
+}
+
 case "${1:-unset}" in
   (help|--help|-h) usage ;;
   (status)         cmd_status ;;
   (create-now)     cmd_create_now ;;
   (list)           cmd_list ;;
+  (restore)        cmd_restore "${2:-unset}" ;;
   (*)              usage && exit 1 ;;
 esac

@@ -40,6 +40,7 @@ func (a API) AddTo(r *mux.Router) {
 	r.Methods("GET").Path("/v1/status").HandlerFunc(a.handleGetStatus)
 	r.Methods("POST").Path("/v1/backup-now").HandlerFunc(a.handlePostBackupNow)
 	r.Methods("GET").Path("/v1/backups").HandlerFunc(a.handleGetBackups)
+	r.Methods("POST").Path("/v1/restore/:id").HandlerFunc(a.handlePostRestore)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,4 +103,30 @@ func (a API) handleGetBackups(w http.ResponseWriter, r *http.Request) {
 		backups = []*restore.RestorableBackup{} //ensure that JSON contains "[]" instead of "null"
 	}
 	respondwith.JSON(w, http.StatusOK, backups)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// POST /v1/restore
+
+func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
+	httpapi.IdentifyEndpoint(r, "/v1/restore/:id")
+
+	//find backup
+	backups, err := restore.ListRestorableBackups(a.Config)
+	if respondwith.ErrorText(w, err) {
+		return
+	}
+	bkp := backups.FindByID(mux.Vars(r)["id"])
+	if bkp == nil {
+		http.Error(w, "no such backup", http.StatusNotFound)
+		return
+	}
+
+	//run restore
+	err := bkp.Restore(a.Config)
+	if err == nil {
+		http.Error(w, "backup restored successfully", http.StatusOK)
+	} else {
+		http.Error(w, "backup failed (check the pgbackup container log for details): "+err.Error(), http.StatusInternalServerError)
+	}
 }

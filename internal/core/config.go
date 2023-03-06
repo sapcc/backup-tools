@@ -93,3 +93,13 @@ func NewConfiguration() (*Configuration, error) {
 
 	return &cfg, nil
 }
+
+// ArgsForPsql prepends common options for psql to the given list of arguments.
+// The arguments given to this method are specific to a particular psql
+// invocation, and this function adds those that are always required.
+func (cfg Configuration) ArgsForPsql(args ...string) []string {
+	common := []string{
+		"-qA", "-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
+	}
+	return append(common, args...)
+}

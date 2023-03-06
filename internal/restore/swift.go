@@ -20,7 +20,11 @@
 package restore
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -36,8 +40,22 @@ type RestorableBackup struct {
 	TotalSizeBytes uint64   `json:"total_size_bytes"`
 }
 
+// RestorableBackups adds convenience functions on a slice of RestorableBackup.
+type RestorableBackups []*RestorableBackup
+
+// FindByID returns the backup with that id, or nil if no such backup is in
+// this slice.
+func (backups RestorableBackups) FindByID(id string) *RestorableBackup {
+	for _, b := range backups {
+		if b.ID == id {
+			return b
+		}
+	}
+	return nil
+}
+
 // ListRestorableBackups searches for restorable backups in Swift.
-func ListRestorableBackups(cfg *core.Configuration) ([]*RestorableBackup, error) {
+func ListRestorableBackups(cfg *core.Configuration) (RestorableBackups, error) {
 	iter := cfg.Container.Objects()
 	iter.Prefix = cfg.ObjectNamePrefix
 	objInfos, err := iter.CollectDetailed()
@@ -47,7 +65,7 @@ func ListRestorableBackups(cfg *core.Configuration) ([]*RestorableBackup, error)
 
 	//NOTE: ObjectNamePrefix has a trailing slash
 	rx := regexp.MustCompile(fmt.Sprintf(`^%s(\d{12})/backup/pgsql/base/([^.]*)\.sql\.gz$`, regexp.QuoteMeta(cfg.ObjectNamePrefix)))
-	var result []*RestorableBackup
+	var result RestorableBackups
 	for _, objInfo := range objInfos {
 		//skip files not matching the above pattern (this especially skips the "last_backup_timestamp")
 		match := rx.FindStringSubmatch(objInfo.Object.Name())
@@ -63,7 +81,7 @@ func ListRestorableBackups(cfg *core.Configuration) ([]*RestorableBackup, error)
 		//do we already have an entry for this backup? (this can happen when a
 		//Postgres contains multiple databases, since each database is backed up
 		//into a separate Swift object)
-		bkp := findBackupInList(result, backupTimeStr)
+		bkp := result.FindByID(backupTimeStr)
 		if bkp == nil {
 			result = append(result, &RestorableBackup{
 				ID:             backupTimeStr,
@@ -80,11 +98,48 @@ func ListRestorableBackups(cfg *core.Configuration) ([]*RestorableBackup, error)
 	return result, nil
 }
 
-func findBackupInList(backups []*RestorableBackup, id string) *RestorableBackup {
-	for _, b := range backups {
-		if b.ID == id {
-			return b
+// DownloadTo downloads and unzips the dumps belonging to this backup into the
+// given directory on the local filesystem. The return value is the list of
+// files that were written.
+func (bkp RestorableBackup) DownloadTo(dirPath string, cfg *core.Configuration) ([]string, error) {
+	var paths []string
+	for _, databaseName := range bkp.DatabaseNames {
+		path, err := bkp.downloadOneFile(dirPath, databaseName, cfg)
+		if err != nil {
+			return nil, err
 		}
+		paths = append(paths, path)
 	}
-	return nil
+	return paths, nil
+}
+
+func (bkp RestorableBackup) downloadOneFile(dirPath, databaseName string, cfg *core.Configuration) (string, error) {
+	//download from Swift
+	objPath := fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", bkp.ID, databaseName)
+	obj := cfg.Container.Object(cfg.ObjectNamePrefix + objPath)
+	reader, err := obj.Download(nil).AsReadCloser()
+	if err != nil {
+		return "", fmt.Errorf("could not GET %s: %w", obj.Name(), err)
+	}
+	defer reader.Close()
+
+	//unpack gzip compression
+	gzipReader, err := gzip.NewReader(reader)
+	if err != nil {
+		return "", fmt.Errorf("could not ungzip %s: %w", obj.Name(), err)
+	}
+	defer gzipReader.Close()
+
+	//write to disk
+	filePath := filepath.Join(dirPath, databaseName+".sql")
+	writer, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer writer.Close()
+	_, err = io.Copy(writer, gzipReader)
+	if err != nil {
+		return "", fmt.Errorf("could not ungzip %s: %w", obj.Name(), err)
+	}
+	return "", nil
 }
