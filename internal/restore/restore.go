@@ -33,6 +33,10 @@ import (
 func (bkp RestorableBackup) Restore(cfg *core.Configuration) error {
 	//download dumps
 	dirPath := fmt.Sprintf("/tmp/restore-%s", bkp.ID)
+	err := os.MkdirAll(dirPath, 0777)
+	if err != nil {
+		return err
+	}
 	filePaths, err := bkp.DownloadTo(dirPath, cfg)
 	if err != nil {
 		return err
