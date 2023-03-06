@@ -123,7 +123,7 @@ func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//run restore
-	err := bkp.Restore(a.Config)
+	err = bkp.Restore(a.Config)
 	if err == nil {
 		http.Error(w, "backup restored successfully", http.StatusOK)
 	} else {
