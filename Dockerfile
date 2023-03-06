@@ -1,15 +1,25 @@
-FROM golang:1.20-alpine3.17 as gobuilder
+FROM golang:1.20.1-alpine3.17 as builder
+
+RUN apk add --no-cache --no-progress gcc git make musl-dev
 
 COPY . /src
-RUN cd /src && go build -ldflags "-s -w" -mod vendor -o /pkg/bin/backup-server .
+ARG BININFO_BUILD_DATE BININFO_COMMIT_HASH BININFO_VERSION # provided to 'make install'
+RUN make -C /src install PREFIX=/pkg GO_BUILDFLAGS='-mod vendor'
+
+################################################################################
 
 FROM alpine:3.17
-LABEL source_repository="https://github.com/sapcc/containers"
-ARG POSTGRES_VERSION=12
 
-RUN apk add --no-cache --no-progress postgresql${POSTGRES_VERSION}-client ca-certificates curl jq less vim iproute2
+RUN apk add --no-cache --no-progress ca-certificates postgresql12-client
+COPY --from=builder /pkg/ /usr/
 
-COPY --from=gobuilder /pkg/bin/ /usr/local/sbin/
-COPY ./backup-tools.sh          /usr/local/sbin/backup-tools
+ARG BININFO_BUILD_DATE BININFO_COMMIT_HASH BININFO_VERSION
+LABEL source_repository="https://github.com/sapcc/containers" \
+  org.opencontainers.image.url="https://github.com/sapcc/containers" \
+  org.opencontainers.image.created=${BININFO_BUILD_DATE} \
+  org.opencontainers.image.revision=${BININFO_COMMIT_HASH} \
+  org.opencontainers.image.version=${BININFO_VERSION}
 
-CMD ["/usr/local/sbin/backup-server"]
+USER nobody:nobody
+WORKDIR /var/empty
+ENTRYPOINT [ "/usr/bin/backup-server" ]
