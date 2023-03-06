@@ -25,8 +25,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sapcc/containers/internal/backup"
 	"github.com/sapcc/containers/internal/core"
+	"github.com/sapcc/containers/internal/restore"
 	"github.com/sapcc/go-bits/httpapi"
-	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/respondwith"
 )
 
@@ -39,6 +39,7 @@ type API struct {
 func (a API) AddTo(r *mux.Router) {
 	r.Methods("GET").Path("/v1/status").HandlerFunc(a.handleGetStatus)
 	r.Methods("POST").Path("/v1/backup-now").HandlerFunc(a.handlePostBackupNow)
+	r.Methods("GET").Path("/v1/backups").HandlerFunc(a.handleGetBackups)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +64,7 @@ func (a API) handleGetStatus(w http.ResponseWriter, r *http.Request) {
 
 	respondwith.JSON(w, http.StatusOK, statusResponse{
 		LastBackup: timestamp{
-			Timestamp: lastTime.Format(backup.TimeFormat),
+			Timestamp: lastTime.UTC().Format(backup.TimeFormat),
 			Unix:      lastTime.Unix(),
 		},
 	})
@@ -77,12 +78,28 @@ func (a API) handlePostBackupNow(w http.ResponseWriter, r *http.Request) {
 
 	backupTime, err := backup.Create(a.Config, "because of user request")
 	if respondwith.ErrorText(w, err) {
-		logg.Error(err.Error()) //also ensure that the container log is complete
 		return
 	}
 
 	respondwith.JSON(w, http.StatusOK, timestamp{
-		Timestamp: backupTime.Format(backup.TimeFormat),
+		Timestamp: backupTime.UTC().Format(backup.TimeFormat),
 		Unix:      backupTime.Unix(),
 	})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GET /v1/backups
+
+func (a API) handleGetBackups(w http.ResponseWriter, r *http.Request) {
+	httpapi.IdentifyEndpoint(r, "/v1/backups")
+
+	backups, err := restore.ListRestorableBackups(a.Config)
+	if respondwith.ErrorText(w, err) {
+		return
+	}
+
+	if backups == nil {
+		backups = []*restore.RestorableBackup{} //ensure that JSON contains "[]" instead of "null"
+	}
+	respondwith.JSON(w, http.StatusOK, backups)
 }

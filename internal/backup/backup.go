@@ -58,7 +58,7 @@ const (
 func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returnedError error) {
 	//track metrics for this backup
 	nowTime = time.Now()
-	nowTimeStr := nowTime.Format(TimeFormat)
+	nowTimeStr := nowTime.UTC().Format(TimeFormat)
 	defer func() {
 		if returnedError == nil {
 			backupLastSuccessGauge.Set(float64(nowTime.Unix()))

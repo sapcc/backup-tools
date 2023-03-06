@@ -44,7 +44,7 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 		}
 		return time.Time{}, err
 	}
-	t, err := time.Parse(TimeFormat, str)
+	t, err := time.ParseInLocation(TimeFormat, str, time.UTC)
 	if err != nil {
 		//recover from malformed timestamp files by forcing a new backup immediately, same as above
 		return time.Unix(0, 0).UTC(), nil
@@ -55,7 +55,7 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 // WriteLastBackupTimestamp updates the "last_backup_timestamp" object in Swift
 // to indicate that a backup was completed successfully.
 func WriteLastBackupTimestamp(cfg *core.Configuration, t time.Time) error {
-	payload := strings.NewReader(t.Format(TimeFormat))
+	payload := strings.NewReader(t.UTC().Format(TimeFormat))
 	err := lastBackupTimestampObj(cfg).Upload(payload, nil, nil)
 	if err != nil {
 		return fmt.Errorf("could not write last_backup_timestamp into Swift: %w", err)
