@@ -1,8 +1,7 @@
 FROM golang:1.20-alpine3.17 as gobuilder
 
 COPY . /src
-RUN cd /src && go build -ldflags "-s -w" -mod vendor -o /pkg/bin/backup-restore ./cmd/backup-restore
-RUN cd /src && go build -ldflags "-s -w" -mod vendor -o /pkg/bin/backup-server  .
+RUN cd /src && go build -ldflags "-s -w" -mod vendor -o /pkg/bin/backup-server .
 
 FROM alpine:3.17
 LABEL source_repository="https://github.com/sapcc/containers"
