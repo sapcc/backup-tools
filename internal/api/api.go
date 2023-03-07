@@ -40,7 +40,7 @@ func (a API) AddTo(r *mux.Router) {
 	r.Methods("GET").Path("/v1/status").HandlerFunc(a.handleGetStatus)
 	r.Methods("POST").Path("/v1/backup-now").HandlerFunc(a.handlePostBackupNow)
 	r.Methods("GET").Path("/v1/backups").HandlerFunc(a.handleGetBackups)
-	r.Methods("POST").Path("/v1/restore/:id").HandlerFunc(a.handlePostRestore)
+	r.Methods("POST").Path("/v1/restore/{id}").HandlerFunc(a.handlePostRestore)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
