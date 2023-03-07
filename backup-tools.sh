@@ -31,13 +31,17 @@ do_curl() {
   fi
 }
 
+pretty_print_json() {
+  jq .
+}
+
 cmd_status() {
-  do_curl GET /v1/status
+  do_curl GET /v1/status | pretty_print_json
 }
 
 cmd_create_now() {
   echo "Creating backup... (This might take a while. Check the container log for details.)" >&2
-  do_curl POST /v1/backup-now
+  do_curl POST /v1/backup-now | pretty_print_json
 }
 
 cmd_list() {
