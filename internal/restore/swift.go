@@ -141,5 +141,5 @@ func (bkp RestorableBackup) downloadOneFile(dirPath, databaseName string, cfg *c
 	if err != nil {
 		return "", fmt.Errorf("could not ungzip %s: %w", obj.Name(), err)
 	}
-	return "", nil
+	return filePath, nil
 }
