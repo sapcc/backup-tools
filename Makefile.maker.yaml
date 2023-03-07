@@ -22,7 +22,10 @@ verbatim: |
 dockerfile:
   enabled: true
   entrypoint: [ /usr/bin/backup-server ]
-  extraPackages: [ postgresql12-client ]
+  extraPackages:
+    - postgresql12-client # for psql, pg_dump
+    - curl                # required for backup-tools.sh
+    - jq                  # required for backup-tools.sh
 
 githubWorkflow:
   global:

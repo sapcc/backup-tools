@@ -10,7 +10,7 @@ RUN make -C /src install PREFIX=/pkg GO_BUILDFLAGS='-mod vendor'
 
 FROM alpine:3.17
 
-RUN apk add --no-cache --no-progress ca-certificates postgresql12-client
+RUN apk add --no-cache --no-progress ca-certificates postgresql12-client curl jq
 COPY --from=builder /pkg/ /usr/
 
 ARG BININFO_BUILD_DATE BININFO_COMMIT_HASH BININFO_VERSION
