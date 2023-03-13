@@ -22,6 +22,7 @@ LABEL source_repository="https://github.com/sapcc/containers" \
   org.opencontainers.image.revision=${BININFO_COMMIT_HASH} \
   org.opencontainers.image.version=${BININFO_VERSION}
 
+ENV ENV=/usr/bin/motd.sh
 USER 4200:4200
 WORKDIR /var/empty
 ENTRYPOINT [ "/usr/bin/backup-server" ]

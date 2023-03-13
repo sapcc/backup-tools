@@ -17,12 +17,14 @@ verbatim: |
   install-scripts:
     install -d -m 0755 "$(DESTDIR)$(PREFIX)/bin"
     install -m 0755 backup-tools.sh "$(DESTDIR)$(PREFIX)/bin/backup-tools"
-    install -m 0755 sh.sh           "$(DESTDIR)$(PREFIX)/bin/sh"
+    install -m 0755 motd.sh         "$(DESTDIR)$(PREFIX)/bin/motd.sh"
   install: install-scripts
 
 dockerfile:
   enabled: true
   entrypoint: [ /usr/bin/backup-server ]
+  extraDirectives:
+    - "ENV ENV=/usr/bin/motd.sh"  # `kubectl exec` is not a login shell, so we need to use this instead of /etc/profile or $HOME/.profile
   extraPackages:
     - postgresql12-client # for psql, pg_dump
     - curl                # required for backup-tools.sh
