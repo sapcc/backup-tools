@@ -31,7 +31,7 @@ import (
 	"github.com/kballard/go-shellquote"
 	"github.com/majewsky/schwift"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sapcc/containers/internal/core"
+	"github.com/sapcc/backup-tools/internal/core"
 	"github.com/sapcc/go-bits/logg"
 )
 

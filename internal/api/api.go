@@ -23,9 +23,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/sapcc/containers/internal/backup"
-	"github.com/sapcc/containers/internal/core"
-	"github.com/sapcc/containers/internal/restore"
+	"github.com/sapcc/backup-tools/internal/backup"
+	"github.com/sapcc/backup-tools/internal/core"
+	"github.com/sapcc/backup-tools/internal/restore"
 	"github.com/sapcc/go-bits/httpapi"
 	"github.com/sapcc/go-bits/respondwith"
 )

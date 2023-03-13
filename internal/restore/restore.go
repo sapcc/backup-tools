@@ -25,7 +25,7 @@ import (
 	"os/exec"
 
 	"github.com/kballard/go-shellquote"
-	"github.com/sapcc/containers/internal/core"
+	"github.com/sapcc/backup-tools/internal/core"
 	"github.com/sapcc/go-bits/logg"
 )
 

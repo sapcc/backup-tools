@@ -28,8 +28,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/sapcc/containers/internal/backup"
-	"github.com/sapcc/containers/internal/core"
+	"github.com/sapcc/backup-tools/internal/backup"
+	"github.com/sapcc/backup-tools/internal/core"
 )
 
 // RestorableBackup contains information about a backup that we found in Swift.

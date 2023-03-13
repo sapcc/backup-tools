@@ -1,4 +1,4 @@
-module github.com/sapcc/containers
+module github.com/sapcc/backup-tools
 
 go 1.19
 

@@ -29,9 +29,9 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sapcc/containers/internal/api"
-	"github.com/sapcc/containers/internal/backup"
-	"github.com/sapcc/containers/internal/core"
+	"github.com/sapcc/backup-tools/internal/api"
+	"github.com/sapcc/backup-tools/internal/backup"
+	"github.com/sapcc/backup-tools/internal/core"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/httpapi"
 	"github.com/sapcc/go-bits/httpext"

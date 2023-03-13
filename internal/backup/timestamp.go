@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/majewsky/schwift"
-	"github.com/sapcc/containers/internal/core"
+	"github.com/sapcc/backup-tools/internal/core"
 )
 
 func lastBackupTimestampObj(cfg *core.Configuration) *schwift.Object {
