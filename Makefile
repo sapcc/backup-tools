@@ -17,6 +17,7 @@ default: build-all
 install-scripts:
 	install -d -m 0755 "$(DESTDIR)$(PREFIX)/bin"
 	install -m 0755 backup-tools.sh "$(DESTDIR)$(PREFIX)/bin/backup-tools"
+	install -m 0755 sh.sh           "$(DESTDIR)$(PREFIX)/bin/sh"
 install: install-scripts
 
 GO_BUILDFLAGS = -mod vendor
