@@ -8,4 +8,4 @@
 ###
 
 backup-tools help
-exec sh "$@"
+exec /bin/sh "$@"
