@@ -24,5 +24,5 @@ LABEL source_repository="https://github.com/sapcc/containers" \
 
 ENV ENV=/usr/bin/motd.sh
 USER 4200:4200
-WORKDIR /var/empty
+WORKDIR /home/appuser
 ENTRYPOINT [ "/usr/bin/backup-server" ]
