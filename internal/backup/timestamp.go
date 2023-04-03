@@ -42,7 +42,7 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 			//this branch is esp. relevant for the first ever backup -> we just report a very old last backup to force a backup immediately
 			return time.Unix(0, 0).UTC(), nil
 		}
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("could not read last_backup_timestamp from Swift: %w", err)
 	}
 	t, err := time.ParseInLocation(TimeFormat, str, time.UTC)
 	if err != nil {
