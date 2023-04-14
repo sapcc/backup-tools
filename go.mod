@@ -10,7 +10,7 @@ require (
 	github.com/majewsky/schwift v1.2.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sapcc/go-api-declarations v1.5.0
-	github.com/sapcc/go-bits v0.0.0-20230404144215-11076993c8aa
+	github.com/sapcc/go-bits v0.0.0-20230413144132-bee3aa4c8293
 )
 
 require (
