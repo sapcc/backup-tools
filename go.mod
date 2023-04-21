@@ -9,8 +9,8 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift v1.2.0
 	github.com/prometheus/client_golang v1.15.0
-	github.com/sapcc/go-api-declarations v1.5.0
-	github.com/sapcc/go-bits v0.0.0-20230413144132-bee3aa4c8293
+	github.com/sapcc/go-api-declarations v1.5.1
+	github.com/sapcc/go-bits v0.0.0-20230420083834-e3870701a14b
 )
 
 require (
@@ -24,7 +24,6 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
