@@ -29,17 +29,24 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sapcc/backup-tools/internal/api"
-	"github.com/sapcc/backup-tools/internal/backup"
-	"github.com/sapcc/backup-tools/internal/core"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/httpapi"
 	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/must"
+	"github.com/sapcc/go-bits/osext"
+	"go.uber.org/automaxprocs/maxprocs"
+
+	"github.com/sapcc/backup-tools/internal/api"
+	"github.com/sapcc/backup-tools/internal/backup"
+	"github.com/sapcc/backup-tools/internal/core"
 )
 
 func main() {
+	logg.ShowDebug = osext.GetenvOrDefault("BACKUP_TOOLS_DEBUG")
+	undoMaxprocs := must.Return(maxprocs.Set(maxprocs.Logger(logg.Debug)))
+	defer undoMaxprocs()
+
 	wrap := httpext.WrapTransport(&http.DefaultTransport)
 	wrap.SetOverrideUserAgent(bininfo.Component(), bininfo.VersionOr("unknown"))
 
