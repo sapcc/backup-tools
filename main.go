@@ -43,7 +43,7 @@ import (
 )
 
 func main() {
-	logg.ShowDebug = osext.GetenvOrDefault("BACKUP_TOOLS_DEBUG")
+	logg.ShowDebug = osext.GetenvBool("BACKUP_TOOLS_DEBUG")
 	undoMaxprocs := must.Return(maxprocs.Set(maxprocs.Logger(logg.Debug)))
 	defer undoMaxprocs()
 
