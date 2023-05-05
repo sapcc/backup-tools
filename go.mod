@@ -8,9 +8,9 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift v1.2.0
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/sapcc/go-api-declarations v1.5.1
-	github.com/sapcc/go-bits v0.0.0-20230427112005-83ae3f63bf8b
+	github.com/sapcc/go-bits v0.0.0-20230504084121-e1394d9f1b00
 	go.uber.org/automaxprocs v1.5.2
 )
 
