@@ -9,8 +9,8 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift v1.2.0
 	github.com/prometheus/client_golang v1.15.1
-	github.com/sapcc/go-api-declarations v1.5.1
-	github.com/sapcc/go-bits v0.0.0-20230609124502-ada8add2e99b
+	github.com/sapcc/go-api-declarations v1.6.0
+	github.com/sapcc/go-bits v0.0.0-20230614140115-83eb3a701632
 	go.uber.org/automaxprocs v1.5.2
 )
 
