@@ -31,8 +31,9 @@ import (
 	"github.com/kballard/go-shellquote"
 	"github.com/majewsky/schwift"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sapcc/backup-tools/internal/core"
 	"github.com/sapcc/go-bits/logg"
+
+	"github.com/sapcc/backup-tools/internal/core"
 )
 
 var backupLastSuccessGauge = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -68,7 +69,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 
 	//enumerate databases that need to be backed up
 	query := `SELECT datname FROM pg_database WHERE datname !~ '^template|^postgres$'`
-	cmd := exec.Command("psql", cfg.ArgsForPsql("-t", "-c", query)...)
+	cmd := exec.Command("psql", cfg.ArgsForPsql("-t", "-c", query)...) //nolint:gosec // input is user supplied and self executed
 	logg.Info(">> " + shellquote.Join(cmd.Args...))
 	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()
@@ -94,7 +95,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 		errChan := make(chan error, 1) //must be buffered to ensure that `pipewriter.Close()` runs immediately
 		go func() {
 			defer pipeWriter.Close()
-			cmd := exec.CommandContext(ctx, "pg_dump",
+			cmd := exec.CommandContext(ctx, "pg_dump", //nolint:gosec // input is user supplied and self executed
 				"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
 				"-c", "--if-exist", "-C", "-Z", "5", databaseName)
 			logg.Info(">> " + shellquote.Join(cmd.Args...))

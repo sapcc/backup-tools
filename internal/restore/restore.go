@@ -25,8 +25,9 @@ import (
 	"os/exec"
 
 	"github.com/kballard/go-shellquote"
-	"github.com/sapcc/backup-tools/internal/core"
 	"github.com/sapcc/go-bits/logg"
+
+	"github.com/sapcc/backup-tools/internal/core"
 )
 
 // Restore downloads and restores this backup into the Postgres.
@@ -44,7 +45,7 @@ func (bkp RestorableBackup) Restore(cfg *core.Configuration) error {
 
 	//playback dumps
 	for _, filePath := range filePaths {
-		cmd := exec.Command("psql", cfg.ArgsForPsql("-a", "-f", filePath)...)
+		cmd := exec.Command("psql", cfg.ArgsForPsql("-a", "-f", filePath)...) //nolint:gosec // input is user supplied and self executed
 		logg.Info(">> " + shellquote.Join(cmd.Args...))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

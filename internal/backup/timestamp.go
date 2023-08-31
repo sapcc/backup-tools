@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/majewsky/schwift"
+
 	"github.com/sapcc/backup-tools/internal/core"
 )
 

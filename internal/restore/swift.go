@@ -137,7 +137,7 @@ func (bkp RestorableBackup) downloadOneFile(dirPath, databaseName string, cfg *c
 		return "", err
 	}
 	defer writer.Close()
-	_, err = io.Copy(writer, gzipReader)
+	_, err = io.Copy(writer, gzipReader) //nolint:gosec // the archive is created by us and we must extract it completely
 	if err != nil {
 		return "", fmt.Errorf("could not ungzip %s: %w", obj.Name(), err)
 	}
