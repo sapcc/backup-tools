@@ -21,6 +21,7 @@ package backup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -53,6 +54,10 @@ const (
 	// Retention time for backups.
 	retentionTime time.Duration = 10 * 24 * time.Hour // 10 days
 )
+
+func getPgdumpForVersion(majorVersion string) string {
+	return fmt.Sprintf("/usr/libexec/postgresql%s/pg_dump", majorVersion)
+}
 
 // Create creates a backup unconditionally. The provided `reason` is used
 // in log messages to explain why the backup was created.
@@ -90,12 +95,29 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 		//Close() the writer side in order for LargeObject.Append() to return on
 		//the reader side.
 
+		// determine postgresql server version
+		cmd := exec.CommandContext(ctx, "psql", //nolint:gosec // input is user supplied and self executed
+			"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
+			"--csv", "--tuples-only", "-c", "SHOW SERVER_VERSION") // output not decoration or padding
+		output, err := cmd.Output()
+		if err != nil {
+			return nowTime, fmt.Errorf("could not determine postgresql server version: %w", err)
+		}
+
+		majorVersion := strings.Split(string(output), ".")[0]
+		pgdump := getPgdumpForVersion(majorVersion)
+
+		// if the pgdump version was not found fallback to pgdump version 12
+		if _, err := os.Stat(pgdump); errors.Is(err, os.ErrNotExist) {
+			pgdump = getPgdumpForVersion("12")
+		}
+
 		//run pg_dump
 		pipeReader, pipeWriter := io.Pipe()
 		errChan := make(chan error, 1) //must be buffered to ensure that `pipewriter.Close()` runs immediately
 		go func() {
 			defer pipeWriter.Close()
-			cmd := exec.CommandContext(ctx, "pg_dump", //nolint:gosec // input is user supplied and self executed
+			cmd := exec.CommandContext(ctx, pgdump,
 				"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
 				"-c", "--if-exist", "-C", "-Z", "5", databaseName)
 			logg.Info(">> " + shellquote.Join(cmd.Args...))
