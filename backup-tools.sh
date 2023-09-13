@@ -18,11 +18,9 @@ do_curl() {
   shift
 
   # when curl succeeds (2xx status), print the response body on stdin;
-  # otherwise print the response body on stderr (for proper behavior in pipes;
-  # we cannot use --fail which discards error responses, nor --fail-with-body
-  # which puts error responses on stdout)
+  # otherwise print the response body on stderr
   rm -f /tmp/curl-output
-  if curl --no-progress-meter -o /tmp/curl-output -X "$METHOD" "$URL" "$@"; then
+  if curl --no-progress-meter -o /tmp/curl-output --fail-with-body -X "$METHOD" "$URL" "$@"; then
     cat /tmp/curl-output
   else
     echo "ERROR: could not $METHOD $URL" >&2
