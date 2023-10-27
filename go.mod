@@ -7,7 +7,7 @@ require (
 	github.com/gophercloud/utils v0.0.0-20231010081019-80377eca5d56
 	github.com/gorilla/mux v1.8.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/majewsky/schwift v1.2.0
+	github.com/majewsky/schwift v1.3.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/sapcc/go-api-declarations v1.9.0
 	github.com/sapcc/go-bits v0.0.0-20231019122817-5f7ef7d291ac
