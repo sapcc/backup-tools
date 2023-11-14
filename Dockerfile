@@ -18,7 +18,6 @@ RUN addgroup -g 4200 appgroup \
 RUN apk upgrade --no-cache --no-progress \
   && apk add --no-cache --no-progress ca-certificates postgresql12-client postgresql15-client curl jq \
   && apk del --no-cache --no-progress apk-tools alpine-keys
-
 COPY --from=builder /pkg/ /usr/
 
 ARG BININFO_BUILD_DATE BININFO_COMMIT_HASH BININFO_VERSION
