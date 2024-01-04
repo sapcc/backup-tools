@@ -100,6 +100,7 @@ func NewConfiguration() (*Configuration, error) {
 func (cfg Configuration) ArgsForPsql(args ...string) []string {
 	common := []string{
 		"-qA", "-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
+		"-d", "postgres", //ensure that -d does not default to the app username
 	}
 	return append(common, args...)
 }

@@ -97,8 +97,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 
 		// determine postgresql server version
 		cmd := exec.CommandContext(ctx, "psql", //nolint:gosec // input is user supplied and self executed
-			"-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
-			"--csv", "--tuples-only", "-c", "SHOW SERVER_VERSION") // output not decoration or padding
+			cfg.ArgsForPsql("--csv", "--tuples-only", "-c", "SHOW SERVER_VERSION")...) // output not decoration or padding
 		output, err := cmd.Output()
 		if err != nil {
 			return nowTime, fmt.Errorf("could not determine postgresql server version: %w", err)
