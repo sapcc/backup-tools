@@ -120,7 +120,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 				"--host", cfg.PgHostname,
 				"--username", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
 				"--compress", "5",
-				"--clean", "--create", "--if-exist", databaseName)
+				"--clean", "--create", "--if-exist", "--no-privileges", databaseName)
 			logg.Info(">> " + shellquote.Join(cmd.Args...))
 			cmd.Stdout = pipeWriter
 			cmd.Stderr = os.Stderr
