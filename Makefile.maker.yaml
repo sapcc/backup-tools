@@ -15,11 +15,13 @@ dockerfile:
     - "ENV ENV=/usr/bin/motd.sh"  # `kubectl exec` is not a login shell, so we need to use this instead of /etc/profile or $HOME/.profile
   extraPackages:
     # for psql, pg_dump
-    - postgresql12-client
     - postgresql15-client
     # required for backup-tools.sh
     - curl
     - jq
+    - "\\
+
+      \ \ && apk add --no-cache --no-progress --repository=https://dl-cdn.alpinelinux.org/alpine/v3.18/community postgresql12-client"
 
 golang:
   enableVendoring: true
