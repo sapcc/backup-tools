@@ -20,6 +20,8 @@
 package api
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -112,6 +114,21 @@ func (a API) handleGetBackups(w http.ResponseWriter, r *http.Request) {
 func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 	httpapi.IdentifyEndpoint(r, "/v1/restore/:id")
 
+	//superuser credentials may be supplied in the request body
+	buf, err := io.ReadAll(r.Body)
+	if respondwith.ErrorText(w, err) {
+		return
+	}
+	var req struct {
+		SuperUser *restore.SuperUserCredentials `json:"superuser"`
+	}
+	if len(buf) > 0 {
+		err = json.Unmarshal(buf, &req)
+		if respondwith.ErrorText(w, err) {
+			return
+		}
+	}
+
 	//find backup
 	backups, err := restore.ListRestorableBackups(a.Config)
 	if respondwith.ErrorText(w, err) {
@@ -124,7 +141,7 @@ func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//run restore
-	err = bkp.Restore(a.Config)
+	err = bkp.Restore(a.Config, req.SuperUser)
 	if err == nil {
 		http.Error(w, "backup restored successfully", http.StatusOK)
 	} else {
