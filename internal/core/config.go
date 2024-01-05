@@ -99,8 +99,11 @@ func NewConfiguration() (*Configuration, error) {
 // invocation, and this function adds those that are always required.
 func (cfg Configuration) ArgsForPsql(args ...string) []string {
 	common := []string{
-		"-qA", "-h", cfg.PgHostname, "-U", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
-		"-d", "postgres", //ensure that -d does not default to the app username
+		"--variable", "ON_ERROR_STOP=1",
+		"--quiet", "--no-align",
+		"--host", cfg.PgHostname,
+		"--username", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
+		"--dbname", "postgres", //ensure that -d does not default to the app username
 	}
 	return append(common, args...)
 }
