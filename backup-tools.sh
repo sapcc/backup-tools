@@ -1,5 +1,4 @@
-#!/usr/bin/env sh
-#shellcheck disable=SC3040 # sh in Alpine does support pipefail
+#!/usr/bin/env ash
 set -euo pipefail
 
 usage() {
@@ -55,7 +54,33 @@ cmd_restore() {
   if [ "$BACKUP_ID" = "unset" ]; then
     usage && exit 1
   fi
-  do_curl POST "/v1/restore/${BACKUP_ID}"
+  if [ "${PGSQL_USER:-unset}" = backup ]; then
+    # when using the postgresql-ng chart, this container has a restricted user
+    # with read-only privileges that are enough for creating backups, but not
+    # for restoring them
+    echo "Please enter credentials for the PostgreSQL superuser to proceed."
+    echo -n "Username [postgres]: "
+    read -r PG_SUPERUSER_NAME
+    if [ "$PG_SUPERUSER_NAME" = "" ]; then
+      PG_SUPERUSER_NAME=postgres
+    fi
+    echo -n "Password (get this from the respective Kubernetes Secret): "
+    read -r PG_SUPERUSER_PASSWORD
+    if [ "$PG_SUPERUSER_PASSWORD" = "" ]; then
+      echo "ERROR: No password given." >&2
+      exit 1
+    fi
+    # to ensure that special characters in the input do not break the JSON payload,
+    # use jq to convert the raw input into string literals
+    PG_SUPERUSER_NAME_JSON="$(echo -n "$PG_SUPERUSER_NAME" | jq --raw-input --slurp .)"
+    PG_SUPERUSER_PASSWORD_JSON="$(echo -n "$PG_SUPERUSER_PASSWORD" | jq --raw-input --slurp .)"
+    do_curl POST "/v1/restore/${BACKUP_ID}" -d "{\"superuser\":{\"username\":$PG_SUPERUSER_NAME_JSON,\"password\":$PG_SUPERUSER_PASSWORD_JSON}}"
+  else
+    # when using the legacy postgres chart, this container uses the superuser
+    # credentials, so restore works directly
+    # TODO: remove this case once everyone has been migrated to postgresql-ng
+    do_curl POST "/v1/restore/${BACKUP_ID}" -d "{\"superuser\":null}"
+  fi
 }
 
 case "${1:-unset}" in
