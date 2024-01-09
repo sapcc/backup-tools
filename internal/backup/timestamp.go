@@ -20,12 +20,14 @@
 package backup
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/errext"
 
 	"github.com/sapcc/backup-tools/internal/core"
 )
@@ -37,14 +39,22 @@ func lastBackupTimestampObj(cfg *core.Configuration) *schwift.Object {
 // ReadLastBackupTimestamp reads the "last_backup_timestamp" object in Swift to
 // find when the most recent backup was created.
 func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
-	str, err := lastBackupTimestampObj(cfg).Download(nil).AsString()
-	if err != nil {
+	var str string
+	err := retryUpToThreeTimes(func() error {
+		var err error
+		str, err = lastBackupTimestampObj(cfg).Download(nil).AsString()
 		if schwift.Is(err, http.StatusNotFound) {
-			//this branch is esp. relevant for the first ever backup -> we just report a very old last backup to force a backup immediately
-			return time.Unix(0, 0).UTC(), nil
+			//for the first ever backup, this will force a new backup immediately down below
+			str = ""
+			return nil
+		} else {
+			return err
 		}
+	})
+	if err != nil {
 		return time.Time{}, fmt.Errorf("could not read last_backup_timestamp from Swift: %w", err)
 	}
+
 	t, err := time.ParseInLocation(TimeFormat, str, time.UTC)
 	if err != nil {
 		//recover from malformed timestamp files by forcing a new backup immediately, same as above
@@ -57,9 +67,29 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 // to indicate that a backup was completed successfully.
 func WriteLastBackupTimestamp(cfg *core.Configuration, t time.Time) error {
 	payload := strings.NewReader(t.UTC().Format(TimeFormat))
-	err := lastBackupTimestampObj(cfg).Upload(payload, nil, nil)
+	err := retryUpToThreeTimes(func() error {
+		return lastBackupTimestampObj(cfg).Upload(payload, nil, nil)
+	})
 	if err != nil {
 		return fmt.Errorf("could not write last_backup_timestamp into Swift: %w", err)
 	}
 	return nil
+}
+
+// Retries fallible operations like Swift uploads/downloads up to three times to be more robust.
+func retryUpToThreeTimes(action func() error) error {
+	var errs errext.ErrorSet
+	for {
+		err := action()
+		if err == nil {
+			return nil
+		} else {
+			errs.Add(err)
+		}
+
+		if len(errs) == 3 {
+			return errors.New(errs.Join(", "))
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
