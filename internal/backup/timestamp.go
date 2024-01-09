@@ -40,7 +40,7 @@ func lastBackupTimestampObj(cfg *core.Configuration) *schwift.Object {
 func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 	var str string
 
-  // retry swift download of timestamp file up to 3 times to be more robust
+	// retry swift download of timestamp file up to 3 times to be more robust
 	for {
 		var (
 			err  error
@@ -76,7 +76,7 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 func WriteLastBackupTimestamp(cfg *core.Configuration, t time.Time) error {
 	payload := strings.NewReader(t.UTC().Format(TimeFormat))
 
-  // retry swift upload of timestamp file up to 3 times to be more robust
+	// retry swift upload of timestamp file up to 3 times to be more robust
 	for {
 		var errs errext.ErrorSet
 		err := lastBackupTimestampObj(cfg).Upload(payload, nil, nil)
