@@ -20,12 +20,13 @@
 package backup
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/errext"
 
 	"github.com/sapcc/backup-tools/internal/core"
 )
@@ -37,14 +38,31 @@ func lastBackupTimestampObj(cfg *core.Configuration) *schwift.Object {
 // ReadLastBackupTimestamp reads the "last_backup_timestamp" object in Swift to
 // find when the most recent backup was created.
 func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
-	str, err := lastBackupTimestampObj(cfg).Download(nil).AsString()
-	if err != nil {
-		if schwift.Is(err, http.StatusNotFound) {
-			//this branch is esp. relevant for the first ever backup -> we just report a very old last backup to force a backup immediately
-			return time.Unix(0, 0).UTC(), nil
+	var str string
+
+  // retry swift download of timestamp file up to 3 times to be more robust
+	for {
+		var (
+			err  error
+			errs errext.ErrorSet
+		)
+		str, err = lastBackupTimestampObj(cfg).Download(nil).AsString()
+		if err == nil {
+			break
+		} else {
+			if schwift.Is(err, http.StatusNotFound) {
+				//this branch is esp. relevant for the first ever backup -> we just report a very old last backup to force a backup immediately
+				return time.Unix(0, 0).UTC(), nil
+			}
+			errs.Addf("could not read last_backup_timestamp from Swift: %w", err)
 		}
-		return time.Time{}, fmt.Errorf("could not read last_backup_timestamp from Swift: %w", err)
+
+		time.Sleep(1 * time.Second)
+		if len(errs) == 3 {
+			return time.Time{}, errors.New(errs.Join(", "))
+		}
 	}
+
 	t, err := time.ParseInLocation(TimeFormat, str, time.UTC)
 	if err != nil {
 		//recover from malformed timestamp files by forcing a new backup immediately, same as above
@@ -57,9 +75,21 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 // to indicate that a backup was completed successfully.
 func WriteLastBackupTimestamp(cfg *core.Configuration, t time.Time) error {
 	payload := strings.NewReader(t.UTC().Format(TimeFormat))
-	err := lastBackupTimestampObj(cfg).Upload(payload, nil, nil)
-	if err != nil {
-		return fmt.Errorf("could not write last_backup_timestamp into Swift: %w", err)
+
+  // retry swift upload of timestamp file up to 3 times to be more robust
+	for {
+		var errs errext.ErrorSet
+		err := lastBackupTimestampObj(cfg).Upload(payload, nil, nil)
+		if err == nil {
+			break
+		} else {
+			errs.Addf("could not write last_backup_timestamp into Swift: %w", err)
+		}
+
+		time.Sleep(1 * time.Second)
+		if len(errs) == 3 {
+			return errors.New(errs.Join(", "))
+		}
 	}
 	return nil
 }
