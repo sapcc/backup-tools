@@ -35,7 +35,7 @@ import (
 // Configuration contains all the configuration parameters that we read from
 // the process environment on startup.
 type Configuration struct {
-	//configuraton for upload to/download from Swift
+	//configuration for upload to/download from Swift
 	Container        *schwift.Container
 	SegmentContainer *schwift.Container
 	ObjectNamePrefix string
@@ -44,6 +44,7 @@ type Configuration struct {
 	//configuration for connection to Postgres
 	PgHostname string
 	PgUsername string
+	PgPassword string
 }
 
 // NewConfiguration reads all configuration parameters from the process
@@ -83,6 +84,7 @@ func NewConfiguration() (*Configuration, error) {
 		),
 		PgHostname: osext.GetenvOrDefault("PGSQL_HOST", "localhost"),
 		PgUsername: osext.GetenvOrDefault("PGSQL_USER", "postgres"),
+		PgPassword: osext.MustGetenv("PGPASSWORD"),
 	}
 
 	//read additional environment variables

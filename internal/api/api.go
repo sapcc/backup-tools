@@ -20,6 +20,7 @@
 package api
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -38,12 +39,27 @@ type API struct {
 	Config *core.Configuration
 }
 
+func requireBasicAuth(handler http.HandlerFunc, username, password string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+
+		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(username)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(password)) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Authentication required"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorised.\n")) //nolint:errcheck // can't realistically fail
+			return
+		}
+
+		handler(w, r)
+	}
+}
+
 // AddTo implements the httpapi.API interface.
 func (a API) AddTo(r *mux.Router) {
-	r.Methods("GET").Path("/v1/status").HandlerFunc(a.handleGetStatus)
-	r.Methods("POST").Path("/v1/backup-now").HandlerFunc(a.handlePostBackupNow)
-	r.Methods("GET").Path("/v1/backups").HandlerFunc(a.handleGetBackups)
-	r.Methods("POST").Path("/v1/restore/{id}").HandlerFunc(a.handlePostRestore)
+	r.Methods("GET").Path("/v1/status").HandlerFunc(requireBasicAuth(a.handleGetStatus, a.Config.PgUsername, a.Config.PgPassword))
+	r.Methods("POST").Path("/v1/backup-now").HandlerFunc(requireBasicAuth(a.handlePostBackupNow, a.Config.PgUsername, a.Config.PgPassword))
+	r.Methods("GET").Path("/v1/backups").HandlerFunc(requireBasicAuth(a.handleGetBackups, a.Config.PgUsername, a.Config.PgPassword))
+	r.Methods("POST").Path("/v1/restore/{id}").HandlerFunc(requireBasicAuth(a.handlePostRestore, a.Config.PgUsername, a.Config.PgPassword))
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -100,7 +100,7 @@ func main() {
 		api.API{Config: cfg},
 		httpapi.HealthCheckAPI{SkipRequestLog: true},
 	)
-	must.Succeed(httpext.ListenAndServeContext(ctx, "127.0.0.1:8080", handler))
+	must.Succeed(httpext.ListenAndServeContext(ctx, "0.0.0.0:8080", handler))
 
 	//on SIGINT/SIGTERM, give the backup main loop a chance to complete a backup
 	//that's currently in flight
