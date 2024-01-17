@@ -13,7 +13,7 @@ usage() {
 do_curl() {
   METHOD="$1"
   shift
-  URL="$PGSQL_USER:$PGPASSWORD@http://127.0.0.1:8080$1"
+  URL="http://$PGSQL_USER:$PGPASSWORD@127.0.0.1:8080$1"
   shift
 
   # when curl succeeds (2xx status), print the response body on stdin;
