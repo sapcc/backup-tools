@@ -45,8 +45,7 @@ func requireBasicAuth(handler http.HandlerFunc, username, password string) http.
 
 		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(username)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(password)) != 1 {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Authentication required"`)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorised.\n")) //nolint:errcheck // can't realistically fail
+			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
 			return
 		}
 
