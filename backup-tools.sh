@@ -13,13 +13,13 @@ usage() {
 do_curl() {
   METHOD="$1"
   shift
-  URL="http://$PGSQL_USER:$PGPASSWORD@127.0.0.1:8080$1"
+  URL="http://127.0.0.1:8080$1"
   shift
 
   # when curl succeeds (2xx status), print the response body on stdin;
   # otherwise print the response body on stderr
   rm -f /tmp/curl-output
-  if curl --no-progress-meter -o /tmp/curl-output --fail-with-body -X "$METHOD" "$URL" "$@"; then
+  if curl --no-progress-meter -o /tmp/curl-output --fail-with-body -X "$METHOD" -u "$PGSQL_USER:$PGPASSWORD" "$URL" "$@"; then
     cat /tmp/curl-output
   else
     echo "ERROR: could not $METHOD $URL" >&2
