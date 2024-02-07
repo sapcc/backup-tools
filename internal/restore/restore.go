@@ -40,7 +40,7 @@ type SuperUserCredentials struct {
 // Restore downloads and restores this backup into the Postgres.
 func (bkp RestorableBackup) Restore(cfg *core.Configuration, suCreds *SuperUserCredentials) error {
 	//download dumps
-	dirPath := fmt.Sprintf("/tmp/restore-%s", bkp.ID)
+	dirPath := "/tmp/restore-" + bkp.ID
 	err := os.MkdirAll(dirPath, 0777)
 	if err != nil {
 		return err
