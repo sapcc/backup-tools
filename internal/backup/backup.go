@@ -98,6 +98,8 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 		// determine postgresql server version
 		cmd := exec.CommandContext(ctx, "psql", //nolint:gosec // input is user supplied and self executed
 			cfg.ArgsForPsql("--csv", "--tuples-only", "-c", "SHOW SERVER_VERSION")...) // output not decoration or padding
+		cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
+		cmd.WaitDelay = 3 * time.Second
 		output, err := cmd.Output()
 		if err != nil {
 			return nowTime, fmt.Errorf("could not determine postgresql server version: %w", err)
@@ -122,8 +124,10 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 				"--compress", "5",
 				"--clean", "--create", "--if-exist", "--no-privileges", databaseName)
 			logg.Info(">> " + shellquote.Join(cmd.Args...))
+			cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
 			cmd.Stdout = pipeWriter
 			cmd.Stderr = os.Stderr
+			cmd.WaitDelay = 3 * time.Second
 			errChan <- cmd.Run()
 		}()
 
