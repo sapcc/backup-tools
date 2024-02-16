@@ -15,6 +15,7 @@ dockerfile:
     - "ENV ENV=/usr/bin/motd.sh"  # `kubectl exec` is not a login shell, so we need to use this instead of /etc/profile or $HOME/.profile
   extraPackages:
     # for psql, pg_dump
+    - postgresql15-client
     - postgresql16-client
     # required for backup-tools.sh
     - curl
