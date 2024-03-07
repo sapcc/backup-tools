@@ -64,7 +64,7 @@ cmd_restore() {
     if [ "$PG_SUPERUSER_NAME" = "" ]; then
       PG_SUPERUSER_NAME=postgres
     fi
-    echo -n "Password (get this from the respective Kubernetes Secret): "
+    echo -n "Password (get this from the respective Kubernetes Secret or by exec'ing in the postgresql Pod and running: \`cat /postgres-password; echo\`): "
     read -r PG_SUPERUSER_PASSWORD
     if [ "$PG_SUPERUSER_PASSWORD" = "" ]; then
       echo "ERROR: No password given." >&2
@@ -75,6 +75,10 @@ cmd_restore() {
     PG_SUPERUSER_NAME_JSON="$(echo -n "$PG_SUPERUSER_NAME" | jq --raw-input --slurp .)"
     PG_SUPERUSER_PASSWORD_JSON="$(echo -n "$PG_SUPERUSER_PASSWORD" | jq --raw-input --slurp .)"
     do_curl POST "/v1/restore/${BACKUP_ID}" -d "{\"superuser\":{\"username\":$PG_SUPERUSER_NAME_JSON,\"password\":$PG_SUPERUSER_PASSWORD_JSON}}"
+
+    echo "If the restore was successful and you are using postgres-ng, you must now restart the postgresql pod to apply proper permissions!"
+    echo
+    echo "If the restore failed, check if any other pod is holding an active postgres connection and preventing the database from being dropped."
   else
     # when using the legacy postgres chart, this container uses the superuser
     # credentials, so restore works directly
