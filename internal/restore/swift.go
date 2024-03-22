@@ -67,7 +67,7 @@ func ListRestorableBackups(cfg *core.Configuration) (RestorableBackups, error) {
 	rx := regexp.MustCompile(fmt.Sprintf(`^%s(\d{12})/backup/pgsql/base/([^.]*)\.sql\.gz$`, regexp.QuoteMeta(cfg.ObjectNamePrefix)))
 	var result RestorableBackups
 	for _, objInfo := range objInfos {
-		//skip files not matching the above pattern (this especially skips the "last_backup_timestamp")
+		// skip files not matching the above pattern (this especially skips the "last_backup_timestamp")
 		match := rx.FindStringSubmatch(objInfo.Object.Name())
 		if match == nil {
 			continue
@@ -75,12 +75,12 @@ func ListRestorableBackups(cfg *core.Configuration) (RestorableBackups, error) {
 		backupTimeStr, databaseName := match[1], match[2]
 		backupTime, err := time.ParseInLocation(backup.TimeFormat, backupTimeStr, time.UTC)
 		if err != nil {
-			continue //treat malformed timestamp as "no match"
+			continue // treat malformed timestamp as "no match"
 		}
 
-		//do we already have an entry for this backup? (this can happen when a
-		//Postgres contains multiple databases, since each database is backed up
-		//into a separate Swift object)
+		// do we already have an entry for this backup? (this can happen when a
+		// Postgres contains multiple databases, since each database is backed up
+		// into a separate Swift object)
 		bkp := result.FindByID(backupTimeStr)
 		if bkp == nil {
 			result = append(result, &RestorableBackup{
@@ -114,7 +114,7 @@ func (bkp RestorableBackup) DownloadTo(dirPath string, cfg *core.Configuration) 
 }
 
 func (bkp RestorableBackup) downloadOneFile(dirPath, databaseName string, cfg *core.Configuration) (string, error) {
-	//download from Swift
+	// download from Swift
 	objPath := fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", bkp.ID, databaseName)
 	obj := cfg.Container.Object(cfg.ObjectNamePrefix + objPath)
 	reader, err := obj.Download(nil).AsReadCloser()
@@ -123,14 +123,14 @@ func (bkp RestorableBackup) downloadOneFile(dirPath, databaseName string, cfg *c
 	}
 	defer reader.Close()
 
-	//unpack gzip compression
+	// unpack gzip compression
 	gzipReader, err := gzip.NewReader(reader)
 	if err != nil {
 		return "", fmt.Errorf("could not ungzip %s: %w", obj.Name(), err)
 	}
 	defer gzipReader.Close()
 
-	//write to disk
+	// write to disk
 	filePath := filepath.Join(dirPath, databaseName+".sql")
 	writer, err := os.Create(filePath)
 	if err != nil {

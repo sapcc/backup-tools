@@ -39,7 +39,7 @@ type SuperUserCredentials struct {
 
 // Restore downloads and restores this backup into the Postgres.
 func (bkp RestorableBackup) Restore(cfg *core.Configuration, suCreds *SuperUserCredentials) error {
-	//download dumps
+	// download dumps
 	dirPath := "/tmp/restore-" + bkp.ID
 	err := os.MkdirAll(dirPath, 0777)
 	if err != nil {
@@ -50,14 +50,14 @@ func (bkp RestorableBackup) Restore(cfg *core.Configuration, suCreds *SuperUserC
 		return err
 	}
 
-	//override config if necessary
+	// override config if necessary
 	if suCreds != nil {
 		cloned := *cfg
 		cloned.PgUsername = suCreds.Username
 		cfg = &cloned
 	}
 
-	//playback dumps
+	// playback dumps
 	for _, filePath := range filePaths {
 		cmd := exec.Command("psql", cfg.ArgsForPsql("-a", "-f", filePath)...) //nolint:gosec // input is user supplied and self executed
 		logg.Info(">> " + shellquote.Join(cmd.Args...))

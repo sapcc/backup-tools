@@ -44,7 +44,7 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 		var err error
 		str, err = lastBackupTimestampObj(cfg).Download(nil).AsString()
 		if schwift.Is(err, http.StatusNotFound) {
-			//for the first ever backup, this will force a new backup immediately down below
+			// for the first ever backup, this will force a new backup immediately down below
 			str = ""
 			return nil
 		} else {
@@ -57,7 +57,7 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 
 	t, err := time.ParseInLocation(TimeFormat, str, time.UTC)
 	if err != nil {
-		//recover from malformed timestamp files by forcing a new backup immediately, same as above
+		// recover from malformed timestamp files by forcing a new backup immediately, same as above
 		return time.Unix(0, 0).UTC(), nil
 	}
 	return t, nil

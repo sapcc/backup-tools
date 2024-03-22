@@ -62,7 +62,7 @@ func getPgdumpForVersion(majorVersion string) string {
 // Create creates a backup unconditionally. The provided `reason` is used
 // in log messages to explain why the backup was created.
 func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returnedError error) {
-	//track metrics for this backup
+	// track metrics for this backup
 	nowTime = time.Now()
 	nowTimeStr := nowTime.UTC().Format(TimeFormat)
 	defer func() {
@@ -72,7 +72,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 	}()
 	logg.Info("creating backup %s%s %s...", cfg.ObjectNamePrefix, nowTimeStr, reason)
 
-	//enumerate databases that need to be backed up
+	// enumerate databases that need to be backed up
 	query := `SELECT datname FROM pg_database WHERE datname !~ '^template|^postgres$'`
 	cmd := exec.Command("psql", cfg.ArgsForPsql("-t", "-c", query)...) //nolint:gosec // input is user supplied and self executed
 	logg.Info(">> " + shellquote.Join(cmd.Args...))
@@ -83,17 +83,17 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 	}
 	databaseNames := strings.Fields(string(output))
 
-	//this context will be given to child processes to ensure that they get
-	//cleaned up properly in case of unexpected errors (esp. network errors when
-	//uploading to Swift)
+	// this context will be given to child processes to ensure that they get
+	// cleaned up properly in case of unexpected errors (esp. network errors when
+	// uploading to Swift)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	//stream backups from pg_dump into Swift
+	// stream backups from pg_dump into Swift
 	for _, databaseName := range databaseNames {
 		//NOTE: We need to do this in two separate goroutines because we need to
-		//Close() the writer side in order for LargeObject.Append() to return on
-		//the reader side.
+		// Close() the writer side in order for LargeObject.Append() to return on
+		// the reader side.
 
 		// determine postgresql server version
 		cmd := exec.CommandContext(ctx, "psql", //nolint:gosec // input is user supplied and self executed
@@ -113,9 +113,9 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 			pgdump = getPgdumpForVersion("12")
 		}
 
-		//run pg_dump
+		// run pg_dump
 		pipeReader, pipeWriter := io.Pipe()
-		errChan := make(chan error, 1) //must be buffered to ensure that `pipewriter.Close()` runs immediately
+		errChan := make(chan error, 1) // must be buffered to ensure that `pipewriter.Close()` runs immediately
 		go func() {
 			defer pipeWriter.Close()
 			cmd := exec.CommandContext(ctx, pgdump,
@@ -131,7 +131,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 			errChan <- cmd.Run()
 		}()
 
-		//upload the outputs of pg_dump into Swift
+		// upload the outputs of pg_dump into Swift
 		obj := cfg.Container.Object(cfg.ObjectNamePrefix + fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", nowTimeStr, databaseName))
 		lo, err := obj.AsNewLargeObject(schwift.SegmentingOptions{
 			Strategy:         schwift.StaticLargeObject,
@@ -153,14 +153,14 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 			return nowTime, fmt.Errorf("could not finalize upload into Swift: %w", err)
 		}
 
-		//wait for pg_dump to finish
+		// wait for pg_dump to finish
 		err = <-errChan
 		if err != nil {
 			return nowTime, fmt.Errorf("could not run pg_dump: %w", err)
 		}
 	}
 
-	//write last_backup_timestamp to indicate that this backup is completed successfully
+	// write last_backup_timestamp to indicate that this backup is completed successfully
 	err = WriteLastBackupTimestamp(cfg, nowTime)
 	if err != nil {
 		return nowTime, err
@@ -172,15 +172,15 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 
 // CreateIfNecessary creates a backup if the schedule demands it.
 func CreateIfNecessary(cfg *core.Configuration) error {
-	//check last_backup_timestamp to see if a backup is needed
+	// check last_backup_timestamp to see if a backup is needed
 	lastTime, err := ReadLastBackupTimestamp(cfg)
 	if err != nil {
 		return err
 	}
 	if lastTime.Add(cfg.Interval).After(time.Now()) {
-		//even if there is no work to do, we update the backup_last_success metric
-		//to an accurate value (this is required after application startup to have
-		//a useful metric value before the first scheduled backup)
+		// even if there is no work to do, we update the backup_last_success metric
+		// to an accurate value (this is required after application startup to have
+		// a useful metric value before the first scheduled backup)
 		backupLastSuccessGauge.Set(float64(lastTime.Unix()))
 		return nil
 	}

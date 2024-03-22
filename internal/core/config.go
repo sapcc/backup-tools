@@ -35,13 +35,13 @@ import (
 // Configuration contains all the configuration parameters that we read from
 // the process environment on startup.
 type Configuration struct {
-	//configuration for upload to/download from Swift
+	// configuration for upload to/download from Swift
 	Container        *schwift.Container
 	SegmentContainer *schwift.Container
 	ObjectNamePrefix string
-	//backup schedule
+	// backup schedule
 	Interval time.Duration
-	//configuration for connection to Postgres
+	// configuration for connection to Postgres
 	PgHostname string
 	PgUsername string
 	PgPassword string
@@ -50,7 +50,7 @@ type Configuration struct {
 // NewConfiguration reads all configuration parameters from the process
 // environment.
 func NewConfiguration() (*Configuration, error) {
-	//initialize connection to Swift
+	// initialize connection to Swift
 	ao, err := clientconfig.AuthOptions(nil)
 	if err != nil {
 		return nil, fmt.Errorf("cannot find OpenStack credentials: %w", err)
@@ -61,7 +61,7 @@ func NewConfiguration() (*Configuration, error) {
 		return nil, fmt.Errorf("cannot connect to OpenStack: %w", err)
 	}
 	eo := gophercloud.EndpointOpts{
-		//note that empty values are acceptable in these two fields (but OS_REGION_NAME is strictly required down below)
+		// note that empty values are acceptable in these two fields (but OS_REGION_NAME is strictly required down below)
 		Region:       os.Getenv("OS_REGION_NAME"),
 		Availability: gophercloud.Availability(os.Getenv("OS_INTERFACE")),
 	}
@@ -87,7 +87,7 @@ func NewConfiguration() (*Configuration, error) {
 		PgPassword: osext.MustGetenv("PGPASSWORD"),
 	}
 
-	//read additional environment variables
+	// read additional environment variables
 	cfg.Interval, err = time.ParseDuration(osext.MustGetenv("BACKUP_PGSQL_FULL"))
 	if err != nil {
 		return nil, fmt.Errorf("malformed value for BACKUP_PGSQL_FULL: %q", os.Getenv("BACKUP_PGSQL_FULL"))
@@ -105,7 +105,7 @@ func (cfg Configuration) ArgsForPsql(args ...string) []string {
 		"--quiet", "--no-align",
 		"--host", cfg.PgHostname,
 		"--username", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
-		"--dbname", "postgres", //ensure that -d does not default to the app username
+		"--dbname", "postgres", // ensure that -d does not default to the app username
 	}
 	return append(common, args...)
 }

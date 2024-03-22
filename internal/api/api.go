@@ -118,7 +118,7 @@ func (a API) handleGetBackups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if backups == nil {
-		backups = []*restore.RestorableBackup{} //ensure that JSON contains "[]" instead of "null"
+		backups = []*restore.RestorableBackup{} // ensure that JSON contains "[]" instead of "null"
 	}
 	respondwith.JSON(w, http.StatusOK, backups)
 }
@@ -129,7 +129,7 @@ func (a API) handleGetBackups(w http.ResponseWriter, r *http.Request) {
 func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 	httpapi.IdentifyEndpoint(r, "/v1/restore/:id")
 
-	//superuser credentials may be supplied in the request body
+	// superuser credentials may be supplied in the request body
 	buf, err := io.ReadAll(r.Body)
 	if respondwith.ErrorText(w, err) {
 		return
@@ -144,7 +144,7 @@ func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//find backup
+	// find backup
 	backups, err := restore.ListRestorableBackups(a.Config)
 	if respondwith.ErrorText(w, err) {
 		return
@@ -155,7 +155,7 @@ func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//run restore
+	// run restore
 	err = bkp.Restore(a.Config, req.SuperUser)
 	if err == nil {
 		http.Error(w, "backup restored successfully", http.StatusOK)
