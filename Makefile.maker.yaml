@@ -25,7 +25,6 @@ dockerfile:
       \ \ && apk add --no-cache --no-progress --repository=https://dl-cdn.alpinelinux.org/alpine/v3.18/community postgresql12-client"
 
 golang:
-  enableVendoring: true
   setGoModVersion: true
 
 golangciLint:
@@ -35,13 +34,7 @@ githubWorkflow:
   ci:
     enabled: true
     coveralls: true
-    ignorePaths: [ "**.md" ] # all Markdown files
-    postgres:
-      enabled: true
-  license:
-    enabled: true
-  securityChecks:
-    enabled: true
+    postgres: true
 renovate:
   enabled: true
   assignees:
