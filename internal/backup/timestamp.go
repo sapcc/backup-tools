@@ -58,7 +58,7 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 	t, err := time.ParseInLocation(TimeFormat, str, time.UTC)
 	if err != nil {
 		// recover from malformed timestamp files by forcing a new backup immediately, same as above
-		return time.Unix(0, 0).UTC(), nil
+		return time.Unix(0, 0).UTC(), nil //nolint:nilerr // intended behaviour
 	}
 	return t, nil
 }
