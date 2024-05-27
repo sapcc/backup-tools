@@ -160,6 +160,6 @@ func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		http.Error(w, "backup restored successfully", http.StatusOK)
 	} else {
-		http.Error(w, "backup failed (check the pgbackup container log for details): "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "restore failed (check the pgbackup container log for details. Did you scale down your application?): "+err.Error(), http.StatusInternalServerError)
 	}
 }
