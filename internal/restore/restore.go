@@ -20,6 +20,7 @@
 package restore
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -38,14 +39,14 @@ type SuperUserCredentials struct {
 }
 
 // Restore downloads and restores this backup into the Postgres.
-func (bkp RestorableBackup) Restore(cfg *core.Configuration, suCreds *SuperUserCredentials) error {
+func (bkp RestorableBackup) Restore(ctx context.Context, cfg *core.Configuration, suCreds *SuperUserCredentials) error {
 	// download dumps
 	dirPath := "/tmp/restore-" + bkp.ID
 	err := os.MkdirAll(dirPath, 0777)
 	if err != nil {
 		return err
 	}
-	filePaths, err := bkp.DownloadTo(dirPath, cfg)
+	filePaths, err := bkp.DownloadTo(ctx, dirPath, cfg)
 	if err != nil {
 		return err
 	}

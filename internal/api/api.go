@@ -76,7 +76,7 @@ type statusResponse struct {
 func (a API) handleGetStatus(w http.ResponseWriter, r *http.Request) {
 	httpapi.IdentifyEndpoint(r, "/v1/status")
 
-	lastTime, err := backup.ReadLastBackupTimestamp(a.Config)
+	lastTime, err := backup.ReadLastBackupTimestamp(r.Context(), a.Config)
 	if respondwith.ErrorText(w, err) {
 		return
 	}
@@ -112,7 +112,7 @@ func (a API) handlePostBackupNow(w http.ResponseWriter, r *http.Request) {
 func (a API) handleGetBackups(w http.ResponseWriter, r *http.Request) {
 	httpapi.IdentifyEndpoint(r, "/v1/backups")
 
-	backups, err := restore.ListRestorableBackups(a.Config)
+	backups, err := restore.ListRestorableBackups(r.Context(), a.Config)
 	if respondwith.ErrorText(w, err) {
 		return
 	}
@@ -145,7 +145,7 @@ func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find backup
-	backups, err := restore.ListRestorableBackups(a.Config)
+	backups, err := restore.ListRestorableBackups(r.Context(), a.Config)
 	if respondwith.ErrorText(w, err) {
 		return
 	}
@@ -156,7 +156,7 @@ func (a API) handlePostRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// run restore
-	err = bkp.Restore(a.Config, req.SuperUser)
+	err = bkp.Restore(r.Context(), a.Config, req.SuperUser)
 	if err == nil {
 		http.Error(w, "backup restored successfully", http.StatusOK)
 	} else {

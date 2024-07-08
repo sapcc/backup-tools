@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/kballard/go-shellquote"
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sapcc/go-bits/logg"
 
@@ -133,7 +133,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 
 		// upload the outputs of pg_dump into Swift
 		obj := cfg.Container.Object(cfg.ObjectNamePrefix + fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", nowTimeStr, databaseName))
-		lo, err := obj.AsNewLargeObject(schwift.SegmentingOptions{
+		lo, err := obj.AsNewLargeObject(ctx, schwift.SegmentingOptions{
 			Strategy:         schwift.StaticLargeObject,
 			SegmentContainer: cfg.SegmentContainer,
 		}, nil)
@@ -143,12 +143,12 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 
 		hdr := schwift.NewObjectHeaders()
 		hdr.ExpiresAt().Set(nowTime.Add(retentionTime))
-		err = lo.Append(pipeReader, uploadSegmentSize, hdr.ToOpts())
+		err = lo.Append(ctx, pipeReader, uploadSegmentSize, hdr.ToOpts())
 		if err != nil {
 			return nowTime, fmt.Errorf("could not write into Swift: %w", err)
 		}
 
-		err = lo.WriteManifest(hdr.ToOpts())
+		err = lo.WriteManifest(ctx, hdr.ToOpts())
 		if err != nil {
 			return nowTime, fmt.Errorf("could not finalize upload into Swift: %w", err)
 		}
@@ -161,7 +161,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 	}
 
 	// write last_backup_timestamp to indicate that this backup is completed successfully
-	err = WriteLastBackupTimestamp(cfg, nowTime)
+	err = WriteLastBackupTimestamp(ctx, cfg, nowTime)
 	if err != nil {
 		return nowTime, err
 	}
@@ -171,9 +171,9 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 }
 
 // CreateIfNecessary creates a backup if the schedule demands it.
-func CreateIfNecessary(cfg *core.Configuration) error {
+func CreateIfNecessary(ctx context.Context, cfg *core.Configuration) error {
 	// check last_backup_timestamp to see if a backup is needed
-	lastTime, err := ReadLastBackupTimestamp(cfg)
+	lastTime, err := ReadLastBackupTimestamp(ctx, cfg)
 	if err != nil {
 		return err
 	}

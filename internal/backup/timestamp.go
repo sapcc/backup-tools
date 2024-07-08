@@ -20,13 +20,14 @@
 package backup
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/errext"
 
 	"github.com/sapcc/backup-tools/internal/core"
@@ -38,11 +39,11 @@ func lastBackupTimestampObj(cfg *core.Configuration) *schwift.Object {
 
 // ReadLastBackupTimestamp reads the "last_backup_timestamp" object in Swift to
 // find when the most recent backup was created.
-func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
+func ReadLastBackupTimestamp(ctx context.Context, cfg *core.Configuration) (time.Time, error) {
 	var str string
 	err := retryUpToThreeTimes(func() error {
 		var err error
-		str, err = lastBackupTimestampObj(cfg).Download(nil).AsString()
+		str, err = lastBackupTimestampObj(cfg).Download(ctx, nil).AsString()
 		if schwift.Is(err, http.StatusNotFound) {
 			// for the first ever backup, this will force a new backup immediately down below
 			str = ""
@@ -65,10 +66,10 @@ func ReadLastBackupTimestamp(cfg *core.Configuration) (time.Time, error) {
 
 // WriteLastBackupTimestamp updates the "last_backup_timestamp" object in Swift
 // to indicate that a backup was completed successfully.
-func WriteLastBackupTimestamp(cfg *core.Configuration, t time.Time) error {
+func WriteLastBackupTimestamp(ctx context.Context, cfg *core.Configuration, t time.Time) error {
 	payload := strings.NewReader(t.UTC().Format(TimeFormat))
 	err := retryUpToThreeTimes(func() error {
-		return lastBackupTimestampObj(cfg).Upload(payload, nil, nil)
+		return lastBackupTimestampObj(cfg).Upload(ctx, payload, nil, nil)
 	})
 	if err != nil {
 		return fmt.Errorf("could not write last_backup_timestamp into Swift: %w", err)
