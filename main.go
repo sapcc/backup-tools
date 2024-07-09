@@ -53,7 +53,7 @@ func main() {
 	wrap.SetOverrideUserAgent(bininfo.Component(), bininfo.VersionOr("unknown"))
 
 	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
-	cfg := must.Return(core.NewConfiguration())
+	cfg := must.Return(core.NewConfiguration(ctx))
 
 	// listen to SIGUSR1 (this signal causes a backup to be created immediately, regardless of schedule)
 	signalChan := make(chan os.Signal, 1)
@@ -71,7 +71,7 @@ func main() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				err := backup.CreateIfNecessary(cfg)
+				err := backup.CreateIfNecessary(ctx, cfg)
 				if err != nil {
 					logg.Error(err.Error())
 				}

@@ -21,6 +21,7 @@ package restore
 
 import (
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -55,10 +56,10 @@ func (backups RestorableBackups) FindByID(id string) *RestorableBackup {
 }
 
 // ListRestorableBackups searches for restorable backups in Swift.
-func ListRestorableBackups(cfg *core.Configuration) (RestorableBackups, error) {
+func ListRestorableBackups(ctx context.Context, cfg *core.Configuration) (RestorableBackups, error) {
 	iter := cfg.Container.Objects()
 	iter.Prefix = cfg.ObjectNamePrefix
-	objInfos, err := iter.CollectDetailed()
+	objInfos, err := iter.CollectDetailed(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -101,10 +102,10 @@ func ListRestorableBackups(cfg *core.Configuration) (RestorableBackups, error) {
 // DownloadTo downloads and unzips the dumps belonging to this backup into the
 // given directory on the local filesystem. The return value is the list of
 // files that were written.
-func (bkp RestorableBackup) DownloadTo(dirPath string, cfg *core.Configuration) ([]string, error) {
+func (bkp RestorableBackup) DownloadTo(ctx context.Context, dirPath string, cfg *core.Configuration) ([]string, error) {
 	var paths []string
 	for _, databaseName := range bkp.DatabaseNames {
-		path, err := bkp.downloadOneFile(dirPath, databaseName, cfg)
+		path, err := bkp.downloadOneFile(ctx, dirPath, databaseName, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -113,11 +114,11 @@ func (bkp RestorableBackup) DownloadTo(dirPath string, cfg *core.Configuration) 
 	return paths, nil
 }
 
-func (bkp RestorableBackup) downloadOneFile(dirPath, databaseName string, cfg *core.Configuration) (string, error) {
+func (bkp RestorableBackup) downloadOneFile(ctx context.Context, dirPath, databaseName string, cfg *core.Configuration) (string, error) {
 	// download from Swift
 	objPath := fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", bkp.ID, databaseName)
 	obj := cfg.Container.Object(cfg.ObjectNamePrefix + objPath)
-	reader, err := obj.Download(nil).AsReadCloser()
+	reader, err := obj.Download(ctx, nil).AsReadCloser()
 	if err != nil {
 		return "", fmt.Errorf("could not GET %s: %w", obj.Name(), err)
 	}

@@ -20,15 +20,16 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/utils/openstack/clientconfig"
-	"github.com/majewsky/schwift"
-	"github.com/majewsky/schwift/gopherschwift"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/utils/v2/openstack/clientconfig"
+	"github.com/majewsky/schwift/v2"
+	"github.com/majewsky/schwift/v2/gopherschwift"
 	"github.com/sapcc/go-bits/osext"
 )
 
@@ -49,14 +50,14 @@ type Configuration struct {
 
 // NewConfiguration reads all configuration parameters from the process
 // environment.
-func NewConfiguration() (*Configuration, error) {
+func NewConfiguration(ctx context.Context) (*Configuration, error) {
 	// initialize connection to Swift
 	ao, err := clientconfig.AuthOptions(nil)
 	if err != nil {
 		return nil, fmt.Errorf("cannot find OpenStack credentials: %w", err)
 	}
 	ao.AllowReauth = true
-	provider, err := openstack.AuthenticatedClient(*ao)
+	provider, err := openstack.AuthenticatedClient(ctx, *ao)
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to OpenStack: %w", err)
 	}
