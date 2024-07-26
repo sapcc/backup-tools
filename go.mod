@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/gophercloud/gophercloud/v2 v2.1.0
-	github.com/gophercloud/utils/v2 v2.0.0-20240705071316-780b64d153e3
+	github.com/gophercloud/utils/v2 v2.0.0-20240725072607-4241c98875fa
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift/v2 v2.0.0
