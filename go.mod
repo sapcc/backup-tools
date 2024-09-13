@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/gophercloud/gophercloud/v2 v2.1.0
-	github.com/gophercloud/utils/v2 v2.0.0-20240812072210-8ce1fc0f2894
+	github.com/gophercloud/utils/v2 v2.0.0-20240912080913-c094a6e5b7da
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift/v2 v2.0.0
