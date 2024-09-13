@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/gophercloud/gophercloud/v2 v2.1.0
-	github.com/gophercloud/utils/v2 v2.0.0-20240812072210-8ce1fc0f2894
+	github.com/gophercloud/utils/v2 v2.0.0-20240912080913-c094a6e5b7da
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift/v2 v2.0.0
@@ -26,8 +26,8 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.58.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
