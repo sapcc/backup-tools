@@ -16,8 +16,7 @@ RUN addgroup -g 4200 appgroup \
 # upgrade all installed packages to fix potential CVEs in advance
 # also remove apk package manager to hopefully remove dependency on OpenSSL 🤞
 RUN apk upgrade --no-cache --no-progress \
-  && apk add --no-cache --no-progress postgresql15-client postgresql16-client postgresql17-client curl jq \
-  && apk add --no-cache --no-progress --repository=https://dl-cdn.alpinelinux.org/alpine/v3.18/community postgresql12-client \
+  && apk add --no-cache --no-progress postgresql15-client postgresql16-client curl jq \
   && apk del --no-cache --no-progress apk-tools alpine-keys
 
 COPY --from=builder /etc/ssl/certs/ /etc/ssl/certs/
@@ -34,6 +33,8 @@ LABEL source_repository="https://github.com/sapcc/containers" \
   org.opencontainers.image.version=${BININFO_VERSION}
 
 ENV ENV=/usr/bin/motd.sh
+COPY --from=postgres:17-alpine /usr/local/bin/pg_dump /usr/libexec/postgresql17/pg_dump
+RUN /usr/libexec/postgresql17/pg_dump --version >/dev/null
 USER 4200:4200
 WORKDIR /home/appuser
 ENTRYPOINT [ "/usr/bin/backup-server" ]
