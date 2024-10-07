@@ -142,15 +142,16 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 			return nowTime, fmt.Errorf("could not write into Swift: %w", err)
 		}
 
-		err = lo.WriteManifest(ctx, hdr.ToOpts())
-		if err != nil {
-			return nowTime, fmt.Errorf("could not finalize upload into Swift: %w", err)
-		}
-
-		// wait for pg_dump to finish
+		// wait for pg_dump to finish before finalizing the object in Swift
+		// (otherwise we might end up storing incomplete or broken backups)
 		err = <-errChan
 		if err != nil {
 			return nowTime, fmt.Errorf("could not run pg_dump: %w", err)
+		}
+
+		err = lo.WriteManifest(ctx, hdr.ToOpts())
+		if err != nil {
+			return nowTime, fmt.Errorf("could not finalize upload into Swift: %w", err)
 		}
 	}
 
