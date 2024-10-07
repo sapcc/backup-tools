@@ -17,6 +17,7 @@ dockerfile:
     # for psql, pg_dump
     - postgresql15-client
     - postgresql16-client
+    - postgresql17-client
     # required for backup-tools.sh
     - curl
     - jq
