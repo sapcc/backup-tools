@@ -21,7 +21,6 @@ package backup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
