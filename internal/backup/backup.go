@@ -106,19 +106,13 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 		}
 
 		majorVersion := strings.Split(string(output), ".")[0]
-		pgdump := getPgdumpForVersion(majorVersion)
-
-		// if the pgdump version was not found fallback to pgdump version 12
-		if _, err := os.Stat(pgdump); errors.Is(err, os.ErrNotExist) {
-			pgdump = getPgdumpForVersion("12")
-		}
-
 		// run pg_dump
 		pipeReader, pipeWriter := io.Pipe()
 		errChan := make(chan error, 1) // must be buffered to ensure that `pipewriter.Close()` runs immediately
 		go func() {
 			defer pipeWriter.Close()
-			cmd := exec.CommandContext(ctx, pgdump,
+			cmd := exec.CommandContext(ctx,
+				getPgdumpForVersion(majorVersion),
 				"--host", cfg.PgHostname,
 				"--username", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
 				"--compress", "5",
