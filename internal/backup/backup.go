@@ -110,7 +110,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 		errChan := make(chan error, 1) // must be buffered to ensure that `pipewriter.Close()` runs immediately
 		go func() {
 			defer pipeWriter.Close()
-			cmd := exec.CommandContext(ctx,
+			cmd := exec.CommandContext(ctx, //nolint:gosec // input is user supplied and self executed
 				getPgdumpForVersion(majorVersion),
 				"--host", cfg.PgHostname,
 				"--username", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
