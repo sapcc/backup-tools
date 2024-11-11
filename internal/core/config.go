@@ -25,11 +25,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
-	"github.com/gophercloud/utils/v2/openstack/clientconfig"
 	"github.com/majewsky/schwift/v2"
 	"github.com/majewsky/schwift/v2/gopherschwift"
+	"github.com/sapcc/go-bits/gophercloudext"
 	"github.com/sapcc/go-bits/osext"
 )
 
@@ -52,19 +51,9 @@ type Configuration struct {
 // environment.
 func NewConfiguration(ctx context.Context) (*Configuration, error) {
 	// initialize connection to Swift
-	ao, err := clientconfig.AuthOptions(nil)
+	provider, eo, err := gophercloudext.NewProviderClient(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("cannot find OpenStack credentials: %w", err)
-	}
-	ao.AllowReauth = true
-	provider, err := openstack.AuthenticatedClient(ctx, *ao)
-	if err != nil {
-		return nil, fmt.Errorf("cannot connect to OpenStack: %w", err)
-	}
-	eo := gophercloud.EndpointOpts{
-		// note that empty values are acceptable in these two fields (but OS_REGION_NAME is strictly required down below)
-		Region:       os.Getenv("OS_REGION_NAME"),
-		Availability: gophercloud.Availability(os.Getenv("OS_INTERFACE")),
+		return nil, err
 	}
 	client, err := openstack.NewObjectStorageV1(provider, eo)
 	if err != nil {
