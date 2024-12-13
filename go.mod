@@ -3,13 +3,13 @@ module github.com/sapcc/backup-tools
 go 1.23
 
 require (
-	github.com/gophercloud/gophercloud/v2 v2.2.0
+	github.com/gophercloud/gophercloud/v2 v2.3.0
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/prometheus/client_golang v1.20.5
-	github.com/sapcc/go-api-declarations v1.13.0
-	github.com/sapcc/go-bits v0.0.0-20241205120930-d112494283ba
+	github.com/sapcc/go-api-declarations v1.13.1
+	github.com/sapcc/go-bits v0.0.0-20241212142854-05ca4ed3590b
 	go.uber.org/automaxprocs v1.6.0
 )
 
