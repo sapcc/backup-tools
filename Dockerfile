@@ -17,7 +17,7 @@ RUN addgroup -g 4200 appgroup \
 # also remove apk package manager to hopefully remove dependency on OpenSSL 🤞
 RUN apk upgrade --no-cache --no-progress \
   && apk add --no-cache --no-progress postgresql15-client postgresql16-client curl jq \
-  && apk del --no-cache --no-progress apk-tools alpine-keys
+  && apk del --no-cache --no-progress apk-tools alpine-keys alpine-release libc-utils
 
 COPY --from=builder /etc/ssl/certs/ /etc/ssl/certs/
 COPY --from=builder /etc/ssl/cert.pem /etc/ssl/cert.pem
