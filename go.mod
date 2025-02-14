@@ -3,7 +3,7 @@ module github.com/sapcc/backup-tools
 go 1.23
 
 require (
-	github.com/gophercloud/gophercloud/v2 v2.4.0
+	github.com/gophercloud/gophercloud/v2 v2.5.0
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/majewsky/schwift/v2 v2.0.0
@@ -22,6 +22,6 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 )
