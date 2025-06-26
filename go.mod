@@ -9,7 +9,7 @@ require (
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/sapcc/go-api-declarations v1.16.0
-	github.com/sapcc/go-bits v0.0.0-20250626113927-7840405be981
+	github.com/sapcc/go-bits v0.0.0-20250626145224-6afa1101f97e
 	go.uber.org/automaxprocs v1.6.0
 )
 
