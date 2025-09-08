@@ -1,6 +1,6 @@
 module github.com/sapcc/backup-tools
 
-go 1.24
+go 1.25
 
 require (
 	github.com/gophercloud/gophercloud/v2 v2.8.0
