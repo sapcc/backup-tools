@@ -45,9 +45,7 @@ func main() {
 
 	// fork off the main loop
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
 		for {
@@ -66,7 +64,7 @@ func main() {
 				}
 			}
 		}
-	}()
+	})
 
 	// serve Prometheus metrics on another goroutine (this needs to be separate
 	// from the rest of the HTTP API because the metrics port is exposed to
