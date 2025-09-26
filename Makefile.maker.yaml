@@ -13,13 +13,14 @@ dockerfile:
   entrypoint: [ /usr/bin/backup-server ]
   extraDirectives:
     - "ENV ENV=/usr/bin/motd.sh"  # `kubectl exec` is not a login shell, so we need to use this instead of /etc/profile or $HOME/.profile
-    - "COPY --from=postgres:17-alpine /usr/local/bin/pg_dump /usr/libexec/postgresql17/pg_dump"
-    - "RUN /usr/libexec/postgresql17/pg_dump --version >/dev/null"
+    - "COPY --from=postgres:18-alpine /usr/local/bin/pg_dump /usr/libexec/postgresql18/pg_dump"
+    - "RUN /usr/libexec/postgresql18/pg_dump --version >/dev/null"
   extraPackages:
     # for psql, pg_dump
     - postgresql15-client
     - postgresql16-client
-    # - postgresql17-client # not yet in any alpine version, so we take it from the postgres alpine image instead
+    - postgresql17-client
+    # - postgresql18-client # not yet in any alpine version, so we take it from the postgres alpine image instead
     # required for backup-tools.sh
     - curl
     - jq
