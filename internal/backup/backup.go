@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/kballard/go-shellquote"
@@ -42,9 +43,15 @@ func getPgdumpForVersion(majorVersion string) string {
 	return fmt.Sprintf("/usr/libexec/postgresql%s/pg_dump", majorVersion)
 }
 
+var backupMutex sync.Mutex
+
 // Create creates a backup unconditionally. The provided `reason` is used
 // in log messages to explain why the backup was created.
 func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returnedError error) {
+	// we only want to allow one backup at a time
+	backupMutex.Lock()
+	defer backupMutex.Unlock()
+
 	// track metrics for this backup
 	nowTime = time.Now()
 	nowTimeStr := nowTime.UTC().Format(TimeFormat)
