@@ -105,7 +105,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 				getPgdumpForVersion(majorVersion),
 				"--host", cfg.PgHostname,
 				"--username", cfg.PgUsername, //NOTE: PGPASSWORD comes via inherited env variable
-				"--compress", "5",
+				"--compress", "zstd",
 				"--clean", "--create", "--if-exist", "--no-privileges", databaseName)
 			logg.Info(">> " + shellquote.Join(cmd.Args...))
 			cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
@@ -116,7 +116,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 		}()
 
 		// upload the outputs of pg_dump into Swift
-		obj := cfg.Container.Object(cfg.ObjectNamePrefix + fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", nowTimeStr, databaseName))
+		obj := cfg.Container.Object(cfg.ObjectNamePrefix + fmt.Sprintf("%s/backup/pgsql/base/%s.sql.zstd", nowTimeStr, databaseName))
 		lo, err := obj.AsNewLargeObject(ctx, schwift.SegmentingOptions{
 			Strategy:         schwift.StaticLargeObject,
 			SegmentContainer: cfg.SegmentContainer,
