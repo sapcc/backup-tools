@@ -49,7 +49,7 @@ func ListRestorableBackups(ctx context.Context, cfg *core.Configuration) (Restor
 	}
 
 	//NOTE: ObjectNamePrefix has a trailing slash
-	rx := regexp.MustCompile(fmt.Sprintf(`^%s(\d{12})/backup/pgsql/base/([^.]*)\.sql\.gz$`, regexp.QuoteMeta(cfg.ObjectNamePrefix)))
+	rx := regexp.MustCompile(fmt.Sprintf(`^%s(\d{12})/backup/pgsql/base/([^.]*)\.sql\.zstd$`, regexp.QuoteMeta(cfg.ObjectNamePrefix)))
 	var result RestorableBackups
 	for _, objInfo := range objInfos {
 		// skip files not matching the above pattern (this especially skips the "last_backup_timestamp")
@@ -100,7 +100,7 @@ func (bkp RestorableBackup) DownloadTo(ctx context.Context, dirPath string, cfg 
 
 func (bkp RestorableBackup) downloadOneFile(ctx context.Context, dirPath, databaseName string, cfg *core.Configuration) (string, error) {
 	// download from Swift
-	objPath := fmt.Sprintf("%s/backup/pgsql/base/%s.sql.gz", bkp.ID, databaseName)
+	objPath := fmt.Sprintf("%s/backup/pgsql/base/%s.sql.zstd", bkp.ID, databaseName)
 	obj := cfg.Container.Object(cfg.ObjectNamePrefix + objPath)
 	reader, err := obj.Download(ctx, nil).AsReadCloser()
 	if err != nil {
