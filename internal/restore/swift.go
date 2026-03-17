@@ -4,7 +4,6 @@
 package restore
 
 import (
-	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -12,6 +11,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"time"
+
+	"github.com/klauspost/compress/zstd"
 
 	"github.com/sapcc/backup-tools/internal/backup"
 	"github.com/sapcc/backup-tools/internal/core"
@@ -108,12 +109,12 @@ func (bkp RestorableBackup) downloadOneFile(ctx context.Context, dirPath, databa
 	}
 	defer reader.Close()
 
-	// unpack gzip compression
-	gzipReader, err := gzip.NewReader(reader)
+	// unpack archive
+	zstdReader, err := zstd.NewReader(reader)
 	if err != nil {
 		return "", fmt.Errorf("could not ungzip %s: %w", obj.Name(), err)
 	}
-	defer gzipReader.Close()
+	defer zstdReader.Close()
 
 	// write to disk
 	filePath := filepath.Join(dirPath, databaseName+".sql")
@@ -122,7 +123,7 @@ func (bkp RestorableBackup) downloadOneFile(ctx context.Context, dirPath, databa
 		return "", err
 	}
 	defer writer.Close()
-	_, err = io.Copy(writer, gzipReader) //nolint:gosec // the archive is created by us and we must extract it completely
+	_, err = io.Copy(writer, zstdReader)
 	if err != nil {
 		return "", fmt.Errorf("could not ungzip %s: %w", obj.Name(), err)
 	}
