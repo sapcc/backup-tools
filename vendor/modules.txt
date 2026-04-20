@@ -39,12 +39,6 @@ github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/kr/text v0.2.0
 ## explicit
-# github.com/majewsky/schwift/v2 v2.0.0
-## explicit; go 1.22
-github.com/majewsky/schwift/v2
-github.com/majewsky/schwift/v2/capabilities
-github.com/majewsky/schwift/v2/gopherschwift
-github.com/majewsky/schwift/v2/internal/errext
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
@@ -82,6 +76,12 @@ github.com/sapcc/go-bits/must
 github.com/sapcc/go-bits/osext
 github.com/sapcc/go-bits/respondwith
 github.com/sapcc/go-bits/syncext
+# go.xyrillian.de/schwift/v2 v2.1.0
+## explicit; go 1.25.0
+go.xyrillian.de/schwift/v2
+go.xyrillian.de/schwift/v2/capabilities
+go.xyrillian.de/schwift/v2/gopherschwift
+go.xyrillian.de/schwift/v2/internal/errext
 # go.yaml.in/yaml/v2 v2.4.3
 ## explicit; go 1.15
 go.yaml.in/yaml/v2

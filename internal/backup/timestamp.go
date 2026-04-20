@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/errext"
+	"go.xyrillian.de/schwift/v2"
 
 	"github.com/sapcc/backup-tools/internal/core"
 )

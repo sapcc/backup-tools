@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/kballard/go-shellquote"
-	"github.com/majewsky/schwift/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sapcc/go-bits/logg"
+	"go.xyrillian.de/schwift/v2"
 
 	"github.com/sapcc/backup-tools/internal/core"
 )
