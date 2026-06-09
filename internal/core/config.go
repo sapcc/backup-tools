@@ -39,6 +39,7 @@ func NewConfiguration(ctx context.Context) (*Configuration, error) {
 	if err != nil {
 		return nil, err
 	}
+	eo.Type = osext.GetenvOrDefault("OS_SERVICE_TYPE", "object-store")
 	client, err := openstack.NewObjectStorageV1(provider, eo)
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to Swift: %w", err)
