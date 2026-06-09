@@ -9,7 +9,7 @@ require (
 	github.com/klauspost/compress v1.18.6
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sapcc/go-api-declarations v1.22.0
-	github.com/sapcc/go-bits v0.0.0-20260604151206-e698d422ff96
+	github.com/sapcc/go-bits v0.0.0-20260609114743-3bf4546d2a8d
 	go.xyrillian.de/schwift/v2 v2.1.0
 )
 
