@@ -49,9 +49,18 @@ func NewConfiguration(ctx context.Context) (*Configuration, error) {
 		return nil, fmt.Errorf("cannot connect to Swift: %w", err)
 	}
 
+	container, err := account.Container("db_backup").EnsureExists(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create db_backup container: %w", err)
+	}
+	segmentContainer, err := account.Container("db_backup_segments").EnsureExists(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create db_backup_segments container: %w", err)
+	}
+
 	cfg := Configuration{
-		Container:        account.Container("db_backup"),
-		SegmentContainer: account.Container("db_backup_segments"),
+		Container:        container,
+		SegmentContainer: segmentContainer,
 		ObjectNamePrefix: fmt.Sprintf("%s/%s/%s/",
 			osext.MustGetenv("OS_REGION_NAME"),
 			osext.MustGetenv("MY_POD_NAMESPACE"),
