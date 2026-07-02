@@ -3,10 +3,10 @@ module github.com/sapcc/backup-tools
 go 1.26
 
 require (
-	github.com/gophercloud/gophercloud/v2 v2.12.0
+	github.com/gophercloud/gophercloud/v2 v2.13.0
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/klauspost/compress v1.18.6
+	github.com/klauspost/compress v1.19.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sapcc/go-api-declarations v1.24.0
 	github.com/sapcc/go-bits v0.0.0-20260623114633-b9734b46a368
