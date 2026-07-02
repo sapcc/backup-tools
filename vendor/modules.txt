@@ -74,7 +74,7 @@ github.com/sapcc/go-bits/must
 github.com/sapcc/go-bits/osext
 github.com/sapcc/go-bits/respondwith
 github.com/sapcc/go-bits/syncext
-# go.xyrillian.de/gg v1.10.1
+# go.xyrillian.de/gg v1.11.1
 ## explicit; go 1.26
 go.xyrillian.de/gg/option
 # go.xyrillian.de/schwift/v2 v2.1.0
