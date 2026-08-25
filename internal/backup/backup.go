@@ -95,7 +95,7 @@ func Create(cfg *core.Configuration, reason string) (nowTime time.Time, returned
 			return nowTime, fmt.Errorf("could not determine postgresql server version: %w", err)
 		}
 
-		majorVersion := strings.Split(string(output), ".")[0]
+		majorVersion, _, _ := strings.Cut(string(output), ".")
 		// run pg_dump
 		pipeReader, pipeWriter := io.Pipe()
 		errChan := make(chan error, 1) // must be buffered to ensure that `pipewriter.Close()` runs immediately
