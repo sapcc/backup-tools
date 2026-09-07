@@ -38,7 +38,8 @@ func requireBasicAuth(handler http.HandlerFunc, username, password string) http.
 }
 
 // AddTo implements the httpapi.API interface.
-func (a API) AddTo(r *mux.Router) {
+func (a API) AddTo(c *httpapi.Composer) {
+	r := c.Router()
 	r.Methods("GET").Path("/v1/status").HandlerFunc(requireBasicAuth(a.handleGetStatus, a.Config.PgUsername, a.Config.PgPassword))
 	r.Methods("POST").Path("/v1/backup-now").HandlerFunc(requireBasicAuth(a.handlePostBackupNow, a.Config.PgUsername, a.Config.PgPassword))
 	r.Methods("GET").Path("/v1/backups").HandlerFunc(requireBasicAuth(a.handleGetBackups, a.Config.PgUsername, a.Config.PgPassword))
