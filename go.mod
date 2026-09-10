@@ -9,7 +9,7 @@ require (
 	github.com/klauspost/compress v1.19.2
 	github.com/prometheus/client_golang v1.24.1
 	github.com/sapcc/go-api-declarations v1.25.0
-	github.com/sapcc/go-bits v0.0.0-20260907125021-ceb8c12b73ac
+	github.com/sapcc/go-bits v0.0.0-20260908173957-572b68774a1c
 	go.xyrillian.de/schwift/v2 v2.2.1
 )
 
@@ -21,7 +21,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	go.xyrillian.de/gg v1.14.0 // indirect
+	go.xyrillian.de/gg v1.15.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
