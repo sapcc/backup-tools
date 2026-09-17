@@ -8,8 +8,8 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/compress v1.20.0
 	github.com/prometheus/client_golang v1.24.1
-	github.com/sapcc/go-api-declarations v1.25.0
-	github.com/sapcc/go-bits v0.0.0-20260908173957-572b68774a1c
+	github.com/sapcc/go-api-declarations v1.25.1
+	github.com/sapcc/go-bits v0.0.0-20260917095256-d8aaf2d73069
 	go.xyrillian.de/schwift/v2 v2.2.1
 )
 
