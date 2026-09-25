@@ -6,7 +6,7 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.15.0
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/klauspost/compress v1.20.0
+	github.com/klauspost/compress v1.20.1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/sapcc/go-api-declarations v1.25.1
 	github.com/sapcc/go-bits v0.0.0-20260924170438-e0aa5c665ed9
