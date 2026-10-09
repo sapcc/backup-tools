@@ -9,7 +9,7 @@ require (
 	github.com/klauspost/compress v1.20.1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/sapcc/go-api-declarations v1.25.1
-	github.com/sapcc/go-bits v0.0.0-20261008092946-7e1776f25e27
+	github.com/sapcc/go-bits v0.0.0-20261009090210-c011033c8559
 	go.xyrillian.de/schwift/v2 v2.2.1
 )
 
@@ -18,10 +18,10 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/client_model v0.6.3 // indirect
+	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	go.xyrillian.de/gg v1.19.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 )
