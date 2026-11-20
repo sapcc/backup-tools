@@ -3,7 +3,7 @@ module github.com/sapcc/backup-tools
 go 1.27
 
 require (
-	github.com/gophercloud/gophercloud/v2 v2.15.0
+	github.com/gophercloud/gophercloud/v2 v2.16.0
 	github.com/gorilla/mux v1.8.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/compress v1.20.4
